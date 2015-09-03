@@ -62,7 +62,8 @@ Defaults to `avy-keys'."
     (save-excursion
       (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style
                          start-bound end-bound)
-      (funcall action))))
+      (when (looking-at url-hint-url-regexp)
+        (funcall action)))))
 
 (defun url-hint-open-url ()
    "Use avy to select a visible url to open."
