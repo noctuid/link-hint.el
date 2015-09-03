@@ -60,7 +60,8 @@ Defaults to `avy-keys'."
   (let ((bound (- (window-end) 1))
         avy-all-windows)
     (save-excursion
-      (avy--generic-jump url-hint-url-regexp nil avy-style (point) bound)
+      (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style
+                         (point) bound)
       (browse-url-at-point))))
 
 ;; reason for emacs 24.1 dependency:
@@ -72,7 +73,8 @@ Defaults to `avy-keys'."
   (let ((bound (- (window-end) 1))
         avy-all-windows)
     (save-excursion
-      (avy--generic-jump url-hint-url-regexp nil avy-style (point) bound)
+      (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style 
+                         (point) bound)
       (kill-new (url-get-url-at-point)))))
 
 (defun url-hint-open-multiple-urls ()
@@ -86,7 +88,7 @@ overlay) is pressed."
         avy-all-windows)
     (while (ignore-errors
              (avy--generic-jump url-hint-url-regexp
-                                nil avy-style (point) bound))
+                                nil url-hint-avy-style (point) bound))
       (push (url-get-url-at-point) urls)
       (goto-char start-point))
     (dolist (url (nreverse urls))
