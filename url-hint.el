@@ -105,7 +105,8 @@ overlay) is pressed."
         urls)
     (save-excursion
       (goto-char start-bound)
-      (while (re-search-forward url-hint-url-regexp end-bound t)
+      (while (and (re-search-forward url-hint-url-regexp end-bound t)
+                  (not (invisible-p (point))))
         (push (url-get-url-at-point) urls)))
     (dolist (url (nreverse urls))
       (browse-url url))))
