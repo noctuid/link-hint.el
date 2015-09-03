@@ -57,11 +57,12 @@ Defaults to `avy-keys'."
 (defun url-hint-open-url ()
   "Use avy to select a visible url to open."
   (interactive)
-  (let ((bound (- (window-end) 1))
+  (let ((start-bound (window-start))
+        (end-bound (window-end))
         avy-all-windows)
     (save-excursion
       (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style
-                         (point) bound)
+                         start-bound end-bound)
       (browse-url-at-point))))
 
 ;; reason for emacs 24.1 dependency:
@@ -70,11 +71,12 @@ Defaults to `avy-keys'."
 `select-enable-clipboard' is non-nil and to the primary selection when
 `select-enable-primary' is non-nil)."
   (interactive)
-  (let ((bound (- (window-end) 1))
+  (let ((start-bound (window-start))
+        (end-bound (window-end))
         avy-all-windows)
     (save-excursion
-      (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style 
-                         (point) bound)
+      (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style
+                         start-bound end-bound)
       (kill-new (url-get-url-at-point)))))
 
 (defun url-hint-open-multiple-urls ()
@@ -82,13 +84,14 @@ Defaults to `avy-keys'."
 The urls will be opened s soon as a non-hint key (a key not appearing in an
 overlay) is pressed."
   (interactive)
-  (let ((bound (- (window-end) 1))
+  (let ((start-bound (window-start))
+        (end-bound (window-end))
         (start-point (point))
         urls
         avy-all-windows)
     (while (ignore-errors
-             (avy--generic-jump url-hint-url-regexp
-                                nil url-hint-avy-style (point) bound))
+             (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style
+                                start-bound end-bound))
       (push (url-get-url-at-point) urls)
       (goto-char start-point))
     (dolist (url (nreverse urls))
@@ -97,10 +100,13 @@ overlay) is pressed."
 (defun url-hint-open-all-urls ()
   "Open all visible urls."
   (interactive)
-  (let ((bound (- (window-end) 1))
+  (let ((start-bound (window-start))
+        (end-bound (window-end))
         urls)
-    (while (re-search-forward url-hint-url-regexp bound t)
-      (push (url-get-url-at-point) urls))
+    (save-excursion
+      (goto-char start-bound)
+      (while (re-search-forward url-hint-url-regexp end-bound t)
+        (push (url-get-url-at-point) urls)))
     (dolist (url (nreverse urls))
       (browse-url url))))
 
