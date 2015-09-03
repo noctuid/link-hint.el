@@ -1,0 +1,22 @@
+* About
+=url-hint.el= is inspired by the link hinting functionality in vim-like browsers and browser plugins such as pentadactyl. It provides commands for using avy to open or copy urls.
+* Configuration
+~browse-url~ is used for opening urls, so in the case that the desired browser is not being used by default, the user can set ~browse-url-browser-function~:
+
+#+begin_src emacs-lisp
+;; Use chromium to open urls
+(setq browse-url-browser-function 'browse-url-chromium)
+;; Use firefox to open urls
+(setq browse-url-browser-function 'browse-url-firefox)
+;; Use qutebrowser to open urls (currently will open a new window each time)
+(setq browse-url-generic-program "qutebrowser")
+(setq browse-url-browser-function 'browse-url-generic)
+#+end_src
+
+This package provides the following commands:
+- ~url-hint-open-url~ - Use avy to select and open a single url. If only one url is currently visible, it will be automatically opened without the need for selection.
+- ~url-hint-open-multiple-urls~ - Use avy to select multiple urls and open them as soon as a key that does not correspond to a url (a key not in the avy overlay) is pressed (like pentadactyl's =g;=).
+- ~url-hint-open-all-urls~ - Opens all urls visible in the buffer.
+- ~url-hint-copy-url~ - Use avy to select and copy a single url to the kill ring. ~select-enable-clipboard~ and ~select-enable-clipboard~ can each be set to a non-nil value to also use the clipboard and/or primary.
+
+This package does not bind any commands by default.
