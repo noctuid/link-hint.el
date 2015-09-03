@@ -54,16 +54,20 @@ Defaults to `avy-keys'."
   :group 'url-hint
   :type '(repeat :tag "Keys" (choice (character :tag "char"))))
 
-(defun url-hint-open-url ()
-  "Use avy to select a visible url to open."
-  (interactive)
+(defun url-hint--single-url-action (action)
+  "Helper function that will jump to a url using avy and execute ACTION."
   (let ((start-bound (window-start))
         (end-bound (window-end))
         avy-all-windows)
     (save-excursion
       (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style
                          start-bound end-bound)
-      (browse-url-at-point))))
+      (funcall action))))
+
+(defun url-hint-open-url ()
+   "Use avy to select a visible url to open."
+  (interactive)
+  (url-hint--single-url-action #'browse-url-at-point))
 
 ;; reason for emacs 24.1 dependency:
 (defun url-hint-copy-url ()
@@ -71,13 +75,8 @@ Defaults to `avy-keys'."
 `select-enable-clipboard' is non-nil and to the primary selection when
 `select-enable-primary' is non-nil)."
   (interactive)
-  (let ((start-bound (window-start))
-        (end-bound (window-end))
-        avy-all-windows)
-    (save-excursion
-      (avy--generic-jump url-hint-url-regexp nil url-hint-avy-style
-                         start-bound end-bound)
-      (kill-new (url-get-url-at-point)))))
+  (url-hint--single-url-action
+   (lambda () (kill-new (url-get-url-at-point)))))
 
 (defun url-hint-open-multiple-urls ()
   "Use avy to select multiple visible urls to open.
