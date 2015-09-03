@@ -81,7 +81,7 @@ Defaults to `avy-keys'."
 
 (defun url-hint-open-multiple-urls ()
   "Use avy to select multiple visible urls to open.
-The urls will be opened s soon as a non-hint key (a key not appearing in an
+The urls will be opened as soon as a non-hint key (a key not appearing in an
 overlay) is pressed."
   (interactive)
   (let ((start-bound (window-start))
