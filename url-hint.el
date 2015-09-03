@@ -30,14 +30,15 @@
 
 (defcustom url-hint-url-regexp
   goto-address-url-regexp
-  "Regexp used to determine what constitutes a url. Defaults to
-`goto-address-url-regxp'"
+  "Regexp used to determine what constitutes a url.
+Defaults to `goto-address-url-regxp'."
   :group 'url-hint
   :type 'regexp)
 
 (defcustom url-hint-avy-style
   avy-style
-  "Method for displaying avy overlays. Defaults to `avy-style'"
+  "Method for displaying avy overlays.
+Defaults to `avy-style'."
   :group 'url-hint
   :type '(choice
           (const :tag "Pre" pre)
@@ -48,9 +49,10 @@
 
 (defcustom url-hint-avy-keys
   avy-keys
-  "Keys used for selecting urls. Defaults to `avy-keys'"
+  "Keys used for selecting urls.
+Defaults to `avy-keys'."
   :group 'url-hint
-  :type '(repeat :tag "Keys" (choice (character :tag "char"))
+  :type '(repeat :tag "Keys" (choice (character :tag "char"))))
 
 (defun url-hint-open-url ()
   "Use avy to select a visible url to open."
@@ -74,8 +76,9 @@
       (kill-new (url-get-url-at-point)))))
 
 (defun url-hint-open-multiple-urls ()
-  "Use avy to select multiple visible urls to open. The urls will be opened
-as soon as a non-hint key (a key not appearing in an overlay) is pressed."
+  "Use avy to select multiple visible urls to open.
+The urls will be opened s soon as a non-hint key (a key not appearing in an
+overlay) is pressed."
   (interactive)
   (let ((bound (- (window-end) 1))
         (start-point (point))
