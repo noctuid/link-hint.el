@@ -111,7 +111,7 @@ overlay) is pressed."
       (goto-char start-bound)
       (while (and (re-search-forward url-hint-url-regexp end-bound t)
                   (not (invisible-p (point))))
-        (push (url-get-url-at-point) urls)))
+        (push (url-get-url-at-point (match-beginning 0)) urls)))
     (dolist (url (nreverse urls))
       (browse-url url))))
 
