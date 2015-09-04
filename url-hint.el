@@ -65,12 +65,14 @@ Defaults to `avy-keys'."
       (when (looking-at url-hint-url-regexp)
         (funcall action)))))
 
+;;;###autoload
 (defun url-hint-open-url ()
    "Use avy to select a visible url to open."
   (interactive)
   (url-hint--single-url-action #'browse-url-at-point))
 
 ;; reason for emacs 24.1 dependency:
+;;;###autoload
 (defun url-hint-copy-url ()
   "Use avy to copy a visible url to the kill ring (and to the clipboard when
 `select-enable-clipboard' is non-nil and to the primary selection when
@@ -79,6 +81,7 @@ Defaults to `avy-keys'."
   (url-hint--single-url-action
    (lambda () (kill-new (url-get-url-at-point)))))
 
+;;;###autoload
 (defun url-hint-open-multiple-urls ()
   "Use avy to select multiple visible urls to open.
 The urls will be opened as soon as a non-hint key (a key not appearing in an
@@ -97,6 +100,7 @@ overlay) is pressed."
     (dolist (url (nreverse urls))
       (browse-url url))))
 
+;;;###autoload
 (defun url-hint-open-all-urls ()
   "Open all visible urls."
   (interactive)
