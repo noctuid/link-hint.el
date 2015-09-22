@@ -44,8 +44,8 @@ This package does not bind any commands by default.
 (defun my/mu4e-open-all-attachments ()
   "Open all visible mu4e attachments."
   (interactive)
-  (let (link-hint-ignore-types
-        (remove 'mu4e-attachment link-hint-all-types-list)
+  (let ((link-hint-ignore-types
+         (remove 'mu4e-attachment link-hint-all-types-list))
         link-hint-act-on-all-ignore-types)
     (link-hint-open-all-links)))
 #+end_src
