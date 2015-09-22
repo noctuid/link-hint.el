@@ -36,6 +36,8 @@ This package provides the following commands for operating on links:
 - ~link-hint-open-all-links~ - Opens all links visible in the buffer.
 - ~link-hint-copy-link~ - Use avy to select and copy a single visible link to the kill ring. ~select-enable-clipboard~ and ~select-enable-clipboard~ can each be set to a non-nil value to also use the clipboard and/or primary.
 
+~link-hint-copy-multiple-links~ and ~link-hint-copy-all-links~ also exist, but they may not be useful very often.
+
 This package does not bind any commands by default.
 
 ** Ignoring Link Types

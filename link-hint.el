@@ -89,13 +89,17 @@ Defaults to `avy-keys'."
 
 (defcustom link-hint-act-on-multiple-ignore-types
   '(mu4e-mailto mu4e-attachment help-link info-link)
-  "Types of links to ignore with `link-hint-open-multiple-links'."
+  "Types of links to ignore with commands that act on multiple visible links.
+Thes commands are `link-hint-open-multiple-links' and
+`link-hint-copy-multiple-links'."
   :group 'link-hint
   :type 'link-hint-link-type-set)
 
 (defcustom link-hint-act-on-all-ignore-types
   '(mu4e-mailto mu4e-attachment help-link info-link)
-  "Types of links to ignore with `link-hint-open-all-links'."
+  "Types of links to ignore with commands that act on all visible links.
+These commands are `link-hint-open-all-links' and
+`link-hint-copy-all-links'."
   :group 'link-hint
   :type 'link-hint-link-type-set)
 
@@ -334,18 +338,19 @@ will be returned instead of calling avy then ACTION."
 (defun link-hint-copy-link ()
   "Copy a visible link of a supported type to the kill ring with avy.
 `select-enable-clipboard' and `select-enable-primary' can be set to non-nil
-values to copy the link to the clipboard and/or primary as well."
+values to copy the link to the clipboard and/or primary as well. Info and help
+mode links are not supported. When selecting a mu4e attachment with this,
+it will prompt for a location to save (since this is the closest behaviour to
+copying"
   (interactive)
   (let ((link-hint-ignore-types (append '(help-link info-link)
                                         link-hint-ignore-types)))
     (link-hint--link-action #'link-hint-copy-link-at-point)))
 
-;;;###autoload
-(defun link-hint-open-multiple-links ()
-  "Use avy to select and open multiple visible links at once.
-The links will be opened as soon as a non-hint key (a key not appearing in an
-overlay) is pressed."
-  (interactive)
+(defun link-hint--multiple-link-action (action)
+  "Move point to a link selected by avy and execute ACTION.
+The point will be returned to its previous location afterwards.
+This function will not do anything if only one link is visible."
   (let ((link-hint-ignore-types
          (append link-hint-ignore-types
                  link-hint-act-on-multiple-ignore-types))
@@ -358,12 +363,29 @@ overlay) is pressed."
     (save-excursion
       (dolist (point (nreverse point-list))
         (goto-char point)
-        (link-hint-open-link-at-point)))))
+        (funcall action)))))
 
 ;;;###autoload
-(defun link-hint-open-all-links ()
-  "Open all visible links."
+(defun link-hint-open-multiple-links ()
+  "Use avy to select and open multiple visible links at once.
+The links will be opened as soon as a non-hint key (a key not appearing in an
+overlay) is pressed. More than one link must be visible for this command to have
+an effect."
   (interactive)
+  (link-hint--multiple-link-action #'link-hint-open-link-at-point))
+
+;;;###autoload
+(defun link-hint-copy-multiple-links ()
+  "Use avy to select and copy multiple, visible links at once to the kill ring.
+See `link-hint-copy-link' for more information on supported types and using
+the clipboard/primary. More than one link must be visible for this command to
+have an effect."
+  (interactive)
+  (link-hint--multiple-link-action #'link-hint-copy-link-at-point))
+
+(defun link-hint--all-links-action (action)
+  "Call ACTION on the location of every visible link in the buffer.
+The point will be returned to its previous location afterwards."
   ;; * so ignored types takes effect for link-hint--link-action
   (let* ((link-hint-ignore-types
           (append link-hint-ignore-types
@@ -372,7 +394,21 @@ overlay) is pressed."
     (save-excursion
       (dolist (point (nreverse point-list))
         (goto-char (car point))
-        (link-hint-open-link-at-point)))))
+        (funcall action)))))
+
+;;;###autoload
+(defun link-hint-open-all-links ()
+  "Open all visible links."
+  (interactive)
+  (link-hint--all-links-action #'link-hint-open-link-at-point))
+
+;;;###autoload
+(defun link-hint-copy-all-links ()
+  "Copy all visible links.
+See `link-hint-copy-link' for more information on supported types and using
+the clipboard/primary."
+  (interactive)
+  (link-hint--all-links-action #'link-hint-copy-link-at-point))
 
 (provide 'link-hint)
 ;;; link-hint.el ends here
