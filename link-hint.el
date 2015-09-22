@@ -260,9 +260,9 @@ Only the range between just after the point and END-BOUND will be searched."
   "Open a link of any supported type at the point."
   (interactive)
   (let* ((text-properties (text-properties-at (point)))
-         (text-url (looking-at link-hint-url-regexp))
          (shr-url (plist-get text-properties 'shr-url))
          (htmlize-url (plist-get text-properties 'htmlize-link))
+         (text-url (looking-at link-hint-url-regexp))
          (mu4e-url (plist-get text-properties 'mu4e-url))
          (mu4e-att (plist-get text-properties 'mu4e-attnum))
          ;; will work for attachments in addition to mail-tos and urls
@@ -271,9 +271,9 @@ Only the range between just after the point and END-BOUND will be searched."
                                'info-xref)
                         (equal (plist-get text-properties 'font-lock-face)
                                'info-xref-visited))))
-    (cond (text-url (browse-url-at-point))
-          (shr-url (browse-url shr-url))
+    (cond (shr-url (browse-url shr-url))
           (htmlize-url (browse-url (cadr htmlize-url)))
+          (text-url (browse-url-at-point))
           (mu4e-url (mu4e~view-browse-url-from-binding))
           (mu4e-att (mu4e-view-open-attachment nil mu4e-att))
           ;; distinguish between opening in browser and view-atachment?
@@ -286,16 +286,17 @@ Only the range between just after the point and END-BOUND will be searched."
   "Copy a link of any supported type at the point."
   (interactive)
   (let* ((text-properties (text-properties-at (point)))
-         (text-url (looking-at link-hint-url-regexp))
          (shr-url (plist-get text-properties 'shr-url))
          (htmlize-url (plist-get text-properties 'htmlize-link))
+         (text-url (looking-at link-hint-url-regexp))
          (mu4e-url (plist-get text-properties 'mu4e-url))
          (mu4e-att (plist-get text-properties 'mu4e-attnum)))
-    (cond (text-url (kill-new (url-get-url-at-point)))
-          (shr-url (kill-new shr-url))
+    (cond (shr-url (kill-new shr-url))
+          (htmlize-url (kill-new (cadr htmlize-url)))
+          (text-url (let ((url (url-get-url-at-point)))
+                      (when url (kill-new url))))
           (mu4e-url (kill-new mu4e-url))
           (mu4e-att (mu4e-view-save-attachment-single nil mu4e-att))
-          (htmlize-url (kill-new (cadr htmlize-url)))
           (t (message "There is no supported link at the point.")))))
 
 (defun link-hint--link-action
