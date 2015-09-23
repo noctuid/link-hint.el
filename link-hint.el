@@ -66,12 +66,18 @@ Defaults to `avy-keys'."
     mu4e-mailto
     mu4e-attachment
     help-link
-    info-link)
+    info-link
+    package-description-link
+    package-keyword-link
+    package-install-link)
   "List containing all suported link types.")
 
 (defvar link-hint-copy-ignore-types
   '(help-link
-    info-link)
+    info-link
+    package-description-link
+    package-keyword-link
+    package-install-link)
   "Link types that the copy action will ignore.
 It defaults to the unsupported types.")
 
@@ -85,7 +91,10 @@ It defaults to the unsupported types.")
           (const :tag "Mu4e mailto address" mu4e-mailto)
           (const :tag "Mu4e attachment" mu4e-attachment)
           (const :tag "Help mode link" help-link)
-          (const :tag "Info mode link" info-link)))
+          (const :tag "Info mode link" info-link)
+          (const :tag "Package.el menu links" package-description-link)
+          (const :tag "Package.el keyword buttons" package-keyword-link)
+          (const :tag "Package.el install buttons" package-install-link)))
 
 (defcustom link-hint-ignore-types
   nil
@@ -248,6 +257,18 @@ Only the range between just after the point and END-BOUND will be searched."
           (when (not (member 'info-link link-hint-ignore-types))
             (link-hint--next-property-with-value
              'font-lock-face 'info-xref-visited end-bound)))
+         (package-description-link-pos
+          (when (not (member 'package-description-link link-hint-ignore-types))
+            (link-hint--next-property-with-value
+             'action 'package-menu-describe-package)))
+         (package-keyword-link-pos
+          (when (not (member 'package-keyword-link link-hint-ignore-types))
+            (link-hint--next-property-with-value
+             'action 'package-keyword-button-action)))
+         (package-install-link-pos
+          (when (not (member 'package-install-link link-hint-ignore-types))
+            (link-hint--next-property-with-value
+             'action 'package-install-button-action)))
          (closest-pos
           (link-hint--min (list text-url-pos
                                 shr-url-pos
@@ -257,7 +278,10 @@ Only the range between just after the point and END-BOUND will be searched."
                                 mu4e-att-pos
                                 help-link-pos
                                 info-link-pos
-                                info-link-visited-pos))))
+                                info-link-visited-pos
+                                package-description-link-pos
+                                package-keyword-link-pos
+                                package-install-link-pos))))
     (when closest-pos
       closest-pos)))
 
@@ -276,15 +300,28 @@ Only the range between just after the point and END-BOUND will be searched."
          (info-link (or (equal (plist-get text-properties 'font-lock-face)
                                'info-xref)
                         (equal (plist-get text-properties 'font-lock-face)
-                               'info-xref-visited))))
+                               'info-xref-visited)))
+         (package-description-link
+          (equal (plist-get text-properties 'action)
+                 'package-menu-describe-package))
+         (package-keyword-link
+          (equal (plist-get text-properties 'action)
+                 'package-keyword-button-action))
+         (package-install-link
+          (equal (plist-get text-properties 'action)
+                 'package-install-button-action)))
     (cond (shr-url (browse-url shr-url))
           (htmlize-url (browse-url (cadr htmlize-url)))
           (text-url (browse-url-at-point))
           (mu4e-url (mu4e~view-browse-url-from-binding))
           (mu4e-att (mu4e-view-open-attachment nil mu4e-att))
           ;; distinguish between opening in browser and view-atachment?
-          (help-link (push-button))
+          ((or help-link
+               package-keyword-link
+               package-install-link)
+           (push-button))
           (info-link (Info-follow-nearest-node))
+          (package-description-link (package-menu-describe-package))
           (t (message "There is no supported link at the point.")))))
 
 ;;;###autoload

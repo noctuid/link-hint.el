@@ -3,13 +3,14 @@
 
 Currently the following types of links are supported:
 
-- Plain text urls (e.g. =http://www.github.com/=; includes mu4e urls)
-- Shr urls (those in elfeed and html mu4e messages)
+- Plain text urls (e.g. =http://www.github.com/=; includes mu4e and irc urls)
+- Shr urls (e.g those in elfeed and html mu4e messages)
 - Htmlize/org mode urls
 - Mu4e mailto addresses
 - Mu4e attachments
 - Help mode links
 - Info mode links
+- Package menu links (further description, install buttons, and keyword buttons)
 
 Feel free to request support for any useful link type I may have missed.
 
