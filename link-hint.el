@@ -59,7 +59,6 @@ Defaults to `avy-keys'."
   :type '(repeat :tag "Keys" (choice (character :tag "char"))))
 
 (defconst link-hint-all-types-list
-  "List containing all suported link types."
   '(text-url
     shr-url
     htmlize-url
@@ -67,7 +66,8 @@ Defaults to `avy-keys'."
     mu4e-mailto
     mu4e-attachment
     help-link
-    info-link))
+    info-link)
+  "List containing all suported link types.")
 
 (define-widget 'link-hint-link-type-set 'lazy
   "A set of link types supported by link-hint."
