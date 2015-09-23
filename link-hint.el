@@ -209,6 +209,10 @@ searched. When VALUE is not found, nil will be returned."
       (link-hint--find-property-with-value property value (point) end-bound)
     (link-hint--find-property-with-value property value (point))))
 
+(defun link-hint--not-ignored-p (type)
+  "Return t if TYPE is not ignored else nil."
+  (not (member type link-hint-ignore-types)))
+
 (defun link-hint--min (numbers)
   "Find the minimum from the list NUMBERS, ignoring nil values."
   (let (number-list
@@ -224,49 +228,47 @@ searched. When VALUE is not found, nil will be returned."
   "Find the closest visible link of all types that are not ignored.
 Only the range between just after the point and END-BOUND will be searched."
   (let* ((end-bound (or end-bound (window-end)))
-         (text-url-pos (when (not (member 'text-url link-hint-ignore-types))
+         (text-url-pos (when (link-hint--not-ignored-p 'text-url)
                          (link-hint--next-text-url end-bound)))
-         (shr-url-pos (when (not (member 'shr-url link-hint-ignore-types))
+         (shr-url-pos (when (link-hint--not-ignored-p 'shr-url)
                         (link-hint--next-property 'shr-url end-bound)))
-         (htmlize-url-pos
-          (when (not (member 'htmlize-url link-hint-ignore-types))
-            (link-hint--next-property 'htmlize-link end-bound)))
+         (htmlize-url-pos (when (link-hint--not-ignored-p 'htmlize-url)
+                            (link-hint--next-property 'htmlize-link end-bound)))
          (mu4e-link-pos (link-hint--next-property 'mu4e-url end-bound))
          (mu4e-link-text (when mu4e-link-pos
                            (plist-get (text-properties-at mu4e-link-pos) 'mu4e-url)))
          (mu4e-url-pos
           (when (and mu4e-link-text
-                     (not (member 'mu4e-url link-hint-ignore-types))
+                     (link-hint--not-ignored-p 'mu4e-url)
                      (not (string-prefix-p "mailto" mu4e-link-text)))
             mu4e-link-pos))
          (mu4e-mailto-pos
           (when (and mu4e-link-text
-                     (not (member 'mu4e-mailto link-hint-ignore-types))
+                     (link-hint--not-ignored-p 'mu4e-mailto)
                      (string-prefix-p "mailto" mu4e-link-text))
             mu4e-link-pos))
          (mu4e-att-pos
           (when (not (member 'mu4e-attachment link-hint-ignore-types))
             (link-hint--next-property 'mu4e-attnum end-bound)))
-         (help-link-pos (when (not (member 'help-link link-hint-ignore-types))
+         (help-link-pos (when (link-hint--not-ignored-p 'help-link)
                           (link-hint--next-property 'help-args end-bound)))
-         (info-link-pos
-          (when (not (member 'info-link link-hint-ignore-types))
-            (link-hint--next-property-with-value
-             'font-lock-face 'info-xref end-bound)))
+         (info-link-pos (when (link-hint--not-ignored-p 'info-link)
+                          (link-hint--next-property-with-value
+                           'font-lock-face 'info-xref end-bound)))
          (info-link-visited-pos
-          (when (not (member 'info-link link-hint-ignore-types))
+          (when (link-hint--not-ignored-p 'info-link)
             (link-hint--next-property-with-value
              'font-lock-face 'info-xref-visited end-bound)))
          (package-description-link-pos
-          (when (not (member 'package-description-link link-hint-ignore-types))
+          (when (link-hint--not-ignored-p 'package-description-link)
             (link-hint--next-property-with-value
              'action 'package-menu-describe-package)))
          (package-keyword-link-pos
-          (when (not (member 'package-keyword-link link-hint-ignore-types))
+          (when (link-hint--not-ignored-p 'package-keyword-link)
             (link-hint--next-property-with-value
              'action 'package-keyword-button-action)))
          (package-install-link-pos
-          (when (not (member 'package-install-link link-hint-ignore-types))
+          (when (link-hint--not-ignored-p 'package-install-link)
             (link-hint--next-property-with-value
              'action 'package-install-button-action)))
          (closest-pos
@@ -285,63 +287,63 @@ Only the range between just after the point and END-BOUND will be searched."
     (when closest-pos
       closest-pos)))
 
+(defmacro link-hint--types-at-point-let-wrapper (body)
+  "Wrap BODY in let statement that checks for supported types at the point."
+  `(let* ((text-properties (text-properties-at (point)))
+          (shr-url (plist-get text-properties 'shr-url))
+          (htmlize-url (plist-get text-properties 'htmlize-link))
+          (text-url (looking-at link-hint-url-regexp))
+          (mu4e-url (plist-get text-properties 'mu4e-url))
+          (mu4e-att (plist-get text-properties 'mu4e-attnum))
+          ;; will work for attachments in addition to mail-tos and urls
+          (help-link (plist-get text-properties 'help-args))
+          (info-link (or (equal (plist-get text-properties 'font-lock-face)
+                                'info-xref)
+                         (equal (plist-get text-properties 'font-lock-face)
+                                'info-xref-visited)))
+          (package-description-link
+           (equal (plist-get text-properties 'action)
+                  'package-menu-describe-package))
+          (package-keyword-link
+           (equal (plist-get text-properties 'action)
+                  'package-keyword-button-action))
+          (package-install-link
+           (equal (plist-get text-properties 'action)
+                  'package-install-button-action)))
+     ,body))
+
 ;;;###autoload
 (defun link-hint-open-link-at-point ()
   "Open a link of any supported type at the point."
   (interactive)
-  (let* ((text-properties (text-properties-at (point)))
-         (shr-url (plist-get text-properties 'shr-url))
-         (htmlize-url (plist-get text-properties 'htmlize-link))
-         (text-url (looking-at link-hint-url-regexp))
-         (mu4e-url (plist-get text-properties 'mu4e-url))
-         (mu4e-att (plist-get text-properties 'mu4e-attnum))
-         ;; will work for attachments in addition to mail-tos and urls
-         (help-link (plist-get text-properties 'help-args))
-         (info-link (or (equal (plist-get text-properties 'font-lock-face)
-                               'info-xref)
-                        (equal (plist-get text-properties 'font-lock-face)
-                               'info-xref-visited)))
-         (package-description-link
-          (equal (plist-get text-properties 'action)
-                 'package-menu-describe-package))
-         (package-keyword-link
-          (equal (plist-get text-properties 'action)
-                 'package-keyword-button-action))
-         (package-install-link
-          (equal (plist-get text-properties 'action)
-                 'package-install-button-action)))
-    (cond (shr-url (browse-url shr-url))
-          (htmlize-url (browse-url (cadr htmlize-url)))
-          (text-url (browse-url-at-point))
-          (mu4e-url (mu4e~view-browse-url-from-binding))
-          (mu4e-att (mu4e-view-open-attachment nil mu4e-att))
-          ;; distinguish between opening in browser and view-atachment?
-          ((or help-link
-               package-keyword-link
-               package-install-link)
-           (push-button))
-          (info-link (Info-follow-nearest-node))
-          (package-description-link (package-menu-describe-package))
-          (t (message "There is no supported link at the point.")))))
+  (link-hint--types-at-point-let-wrapper
+   (cond (shr-url (browse-url shr-url))
+         (htmlize-url (browse-url (cadr htmlize-url)))
+         (text-url (browse-url-at-point))
+         (mu4e-url (mu4e~view-browse-url-from-binding))
+         (mu4e-att (mu4e-view-open-attachment nil mu4e-att))
+         ;; distinguish between opening in browser and view-atachment?
+         ((or help-link
+              package-keyword-link
+              package-install-link)
+          (push-button))
+         (info-link (Info-follow-nearest-node))
+         (package-description-link (package-menu-describe-package))
+         (t (message "There is no supported link at the point.")))))
 
 ;;;###autoload
 (defun link-hint-copy-link-at-point ()
   "Copy a link of any supported type at the point. See the default value of
 `link-hint-copy-ignore-types' for the unsupported types."
   (interactive)
-  (let* ((text-properties (text-properties-at (point)))
-         (shr-url (plist-get text-properties 'shr-url))
-         (htmlize-url (plist-get text-properties 'htmlize-link))
-         (text-url (looking-at link-hint-url-regexp))
-         (mu4e-url (plist-get text-properties 'mu4e-url))
-         (mu4e-att (plist-get text-properties 'mu4e-attnum)))
-    (cond (shr-url (kill-new shr-url))
-          (htmlize-url (kill-new (cadr htmlize-url)))
-          (text-url (let ((url (url-get-url-at-point)))
-                      (when url (kill-new url))))
-          (mu4e-url (kill-new mu4e-url))
-          (mu4e-att (mu4e-view-save-attachment-single nil mu4e-att))
-          (t (message "There is no supported link at the point.")))))
+  (link-hint--types-at-point-let-wrapper
+   (cond (shr-url (kill-new shr-url))
+         (htmlize-url (kill-new (cadr htmlize-url)))
+         (text-url (let ((url (url-get-url-at-point)))
+                     (when url (kill-new url))))
+         (mu4e-url (kill-new mu4e-url))
+         (mu4e-att (mu4e-view-save-attachment-single nil mu4e-att))
+         (t (message "There is no supported link at the point.")))))
 
 (defun link-hint--link-action
     (action &optional require-multiple-links get-links)
