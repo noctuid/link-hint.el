@@ -1,3 +1,4 @@
+[[http://melpa.org/#/link-hint][file:http://melpa.org/packages/link-hint-badge.svg]]
 * About
 =link-hint.el= is inspired by the link hinting functionality in vim-like browsers and browser plugins such as pentadactyl. It provides commands for using avy to open or copy "links."
 
