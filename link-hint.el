@@ -69,6 +69,12 @@ Defaults to `avy-keys'."
     info-link)
   "List containing all suported link types.")
 
+(defvar link-hint-copy-ignore-types
+  '(help-link
+    info-link)
+  "Link types that the copy action will ignore.
+It defaults to the unsupported types.")
+
 (define-widget 'link-hint-link-type-set 'lazy
   "A set of link types supported by link-hint."
   :type '(set
@@ -283,7 +289,8 @@ Only the range between just after the point and END-BOUND will be searched."
 
 ;;;###autoload
 (defun link-hint-copy-link-at-point ()
-  "Copy a link of any supported type at the point."
+  "Copy a link of any supported type at the point. See the default value of
+`link-hint-copy-ignore-types' for the unsupported types."
   (interactive)
   (let* ((text-properties (text-properties-at (point)))
          (shr-url (plist-get text-properties 'shr-url))
@@ -339,13 +346,13 @@ will be returned instead of calling avy then ACTION."
 (defun link-hint-copy-link ()
   "Copy a visible link of a supported type to the kill ring with avy.
 `select-enable-clipboard' and `select-enable-primary' can be set to non-nil
-values to copy the link to the clipboard and/or primary as well. Info and help
-mode links are not supported. When selecting a mu4e attachment with this,
-it will prompt for a location to save (since this is the closest behaviour to
-copying"
+values to copy the link to the clipboard and/or primary as well. See the
+default value of `link-hint-copy-ignore-types' for the unsupported types.
+When selecting a mu4e attachment with this, it will prompt for a location to
+save (since this is the closest behaviour to copying)."
   (interactive)
-  (let ((link-hint-ignore-types (append '(help-link info-link)
-                                        link-hint-ignore-types)))
+  (let ((link-hint-ignore-types (append link-hint-ignore-types
+                                        link-hint-copy-ignore-types)))
     (link-hint--link-action #'link-hint-copy-link-at-point)))
 
 (defun link-hint--multiple-link-action (action)
@@ -378,11 +385,12 @@ an effect."
 ;;;###autoload
 (defun link-hint-copy-multiple-links ()
   "Use avy to select and copy multiple, visible links at once to the kill ring.
-See `link-hint-copy-link' for more information on supported types and using
-the clipboard/primary. More than one link must be visible for this command to
-have an effect."
+See `link-hint-copy-link' for more information. More than one supported link
+must be visible for this command to have an effect."
   (interactive)
-  (link-hint--multiple-link-action #'link-hint-copy-link-at-point))
+  (let ((link-hint-ignore-types (append link-hint-ignore-types
+                                        link-hint-copy-ignore-types)))
+    (link-hint--multiple-link-action #'link-hint-copy-link-at-point)))
 
 (defun link-hint--all-links-action (action)
   "Call ACTION on the location of every visible link in the buffer.
@@ -405,11 +413,12 @@ The point will be returned to its previous location afterwards."
 
 ;;;###autoload
 (defun link-hint-copy-all-links ()
-  "Copy all visible links.
-See `link-hint-copy-link' for more information on supported types and using
-the clipboard/primary."
+  "Copy all visible links of a supported type.
+See `link-hint-copy-link' for more information."
   (interactive)
-  (link-hint--all-links-action #'link-hint-copy-link-at-point))
+  (let ((link-hint-ignore-types (append link-hint-ignore-types
+                                        link-hint-copy-ignore-types)))
+    (link-hint--all-links-action #'link-hint-copy-link-at-point)))
 
 (provide 'link-hint)
 ;;; link-hint.el ends here

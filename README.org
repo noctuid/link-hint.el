@@ -52,3 +52,4 @@ This package does not bind any commands by default.
     (link-hint-open-all-links)))
 #+end_src
 
+~link-hint-copy-ignore-types~ can also be set by the user. However, note that by default it contains the types that there is no copy action for. Removing these types will result in some useless avy overlays over links (selecting them will have no effect).
