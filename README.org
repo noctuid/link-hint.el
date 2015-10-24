@@ -27,8 +27,10 @@ Feel free to request support for any useful link type I may have missed.
 (setq browse-url-browser-function 'browse-url-chromium)
 ;; Use firefox to open urls
 (setq browse-url-browser-function 'browse-url-firefox)
-;; Use qutebrowser to open urls (currently will open a new window each time)
+;; Use qutebrowser to open urls
 (setq browse-url-generic-program "qutebrowser")
+;; You can alternatively change this setting in the config
+(setq browse-url-generic-args '("--target" "tab"))
 (setq browse-url-browser-function 'browse-url-generic)
 #+end_src
 
