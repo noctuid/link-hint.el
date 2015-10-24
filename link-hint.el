@@ -70,7 +70,8 @@ Defaults to `avy-keys'."
     package-description-link
     package-keyword-link
     package-install-link
-    compilation-link)
+    compilation-link
+    other-button-link)
   "List containing all suported link types.")
 
 (defvar link-hint-copy-ignore-types
@@ -79,7 +80,8 @@ Defaults to `avy-keys'."
     package-description-link
     package-keyword-link
     package-install-link
-    compilation-link)
+    compilation-link
+    other-button-link)
   "Link types that the copy action will ignore.
 It defaults to the unsupported types.")
 
@@ -106,7 +108,12 @@ It defaults to the unsupported types.")
   :type 'link-hint-link-type-set)
 
 (defcustom link-hint-act-on-multiple-ignore-types
-  '(mu4e-mailto mu4e-attachment help-link info-link compilation-link)
+  '(mu4e-mailto
+    mu4e-attachment
+    help-link
+    info-link
+    compilation-link
+    other-button-link)
   "Types of links to ignore with commands that act on multiple visible links.
 Thes commands are `link-hint-open-multiple-links' and
 `link-hint-copy-multiple-links'."
@@ -114,7 +121,12 @@ Thes commands are `link-hint-open-multiple-links' and
   :type 'link-hint-link-type-set)
 
 (defcustom link-hint-act-on-all-ignore-types
-  '(mu4e-mailto mu4e-attachment help-link info-link compilation-link)
+  '(mu4e-mailto
+    mu4e-attachment
+    help-link
+    info-link
+    compilation-link
+    other-button-link)
   "Types of links to ignore with commands that act on all visible links.
 These commands are `link-hint-open-all-links' and
 `link-hint-copy-all-links'."
@@ -147,6 +159,24 @@ Only the range between just after START-BOUND and the END-BOUND will be searched
   "Find the next visible plain text url location.
 Only the range between just after the point and END-BOUND will be searched."
   (link-hint--find-text-url (point) end-bound))
+
+(defun link-hint--find-button (&optional start-bound end-bound)
+  "Find the first visible button location.
+Only the range between just after START-BOUND and the END-BOUND will be
+searched."
+  (let* ((start-bound (or start-bound (window-start)))
+         (end-bound (or end-bound (window-end)))
+         (button (next-button start-bound nil))
+         (button-pos (when button (button-start button))))
+    (when (and button-pos
+               (< button-pos end-bound)
+               (not (invisible-p button-pos)))
+      button-pos)))
+
+(defun link-hint--next-button (&optional end-bound)
+  "Find the next visible button location.
+Only the range between just after the point and END-BOUND will be searched."
+  (link-hint--find-button (point) end-bound))
 
 (defun link-hint--find-property (property &optional start-bound end-bound)
   "Find visible location where PROPERTY exists.
@@ -271,6 +301,9 @@ Only the range between just after the point and END-BOUND will be searched."
          (compilation-link-pos
           (when (link-hint--not-ignored-p 'compilation-link)
             (link-hint--next-property 'compilation-message end-bound)))
+         (other-button-link-pos
+          (when (link-hint--not-ignored-p 'other-button-link)
+            (link-hint--next-button)))
          (closest-pos
           (link-hint--min (list text-url-pos
                                 shr-url-pos
@@ -284,7 +317,8 @@ Only the range between just after the point and END-BOUND will be searched."
                                 package-description-link-pos
                                 package-keyword-link-pos
                                 package-install-link-pos
-                                compilation-link-pos))))
+                                compilation-link-pos
+                                other-button-link-pos))))
     (when closest-pos
       closest-pos)))
 
@@ -312,7 +346,8 @@ Only the range between just after the point and END-BOUND will be searched."
            (equal (plist-get text-properties 'action)
                   'package-install-button-action))
           (compilation-link
-           (plist-get text-properties 'compilation-message)))
+           (plist-get text-properties 'compilation-message))
+          (other-button-link (button-at (point))))
      ,body))
 
 ;;;###autoload
@@ -333,6 +368,8 @@ Only the range between just after the point and END-BOUND will be searched."
          (info-link (Info-follow-nearest-node))
          (package-description-link (package-menu-describe-package))
          (compilation-link (compile-goto-error))
+         ;; lowest precedence
+         (other-button-link (push-button))
          (t (message "There is no supported link at the point.")))))
 
 ;;;###autoload
