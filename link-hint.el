@@ -69,7 +69,8 @@ Defaults to `avy-keys'."
     info-link
     package-description-link
     package-keyword-link
-    package-install-link)
+    package-install-link
+    compilation-link)
   "List containing all suported link types.")
 
 (defvar link-hint-copy-ignore-types
@@ -77,7 +78,8 @@ Defaults to `avy-keys'."
     info-link
     package-description-link
     package-keyword-link
-    package-install-link)
+    package-install-link
+    compilation-link)
   "Link types that the copy action will ignore.
 It defaults to the unsupported types.")
 
@@ -94,7 +96,8 @@ It defaults to the unsupported types.")
           (const :tag "Info mode link" info-link)
           (const :tag "Package.el menu links" package-description-link)
           (const :tag "Package.el keyword buttons" package-keyword-link)
-          (const :tag "Package.el install buttons" package-install-link)))
+          (const :tag "Package.el install buttons" package-install-link)
+          (const :tag "Compilation mode link" compilation-link)))
 
 (defcustom link-hint-ignore-types
   nil
@@ -103,7 +106,7 @@ It defaults to the unsupported types.")
   :type 'link-hint-link-type-set)
 
 (defcustom link-hint-act-on-multiple-ignore-types
-  '(mu4e-mailto mu4e-attachment help-link info-link)
+  '(mu4e-mailto mu4e-attachment help-link info-link compilation-link)
   "Types of links to ignore with commands that act on multiple visible links.
 Thes commands are `link-hint-open-multiple-links' and
 `link-hint-copy-multiple-links'."
@@ -111,7 +114,7 @@ Thes commands are `link-hint-open-multiple-links' and
   :type 'link-hint-link-type-set)
 
 (defcustom link-hint-act-on-all-ignore-types
-  '(mu4e-mailto mu4e-attachment help-link info-link)
+  '(mu4e-mailto mu4e-attachment help-link info-link compilation-link)
   "Types of links to ignore with commands that act on all visible links.
 These commands are `link-hint-open-all-links' and
 `link-hint-copy-all-links'."
@@ -265,6 +268,9 @@ Only the range between just after the point and END-BOUND will be searched."
           (when (link-hint--not-ignored-p 'package-install-link)
             (link-hint--next-property-with-value
              'action 'package-install-button-action)))
+         (compilation-link-pos
+          (when (link-hint--not-ignored-p 'compilation-link)
+            (link-hint--next-property 'compilation-message end-bound)))
          (closest-pos
           (link-hint--min (list text-url-pos
                                 shr-url-pos
@@ -277,7 +283,8 @@ Only the range between just after the point and END-BOUND will be searched."
                                 info-link-visited-pos
                                 package-description-link-pos
                                 package-keyword-link-pos
-                                package-install-link-pos))))
+                                package-install-link-pos
+                                compilation-link-pos))))
     (when closest-pos
       closest-pos)))
 
@@ -303,7 +310,9 @@ Only the range between just after the point and END-BOUND will be searched."
                   'package-keyword-button-action))
           (package-install-link
            (equal (plist-get text-properties 'action)
-                  'package-install-button-action)))
+                  'package-install-button-action))
+          (compilation-link
+           (plist-get text-properties 'compilation-message)))
      ,body))
 
 ;;;###autoload
@@ -323,6 +332,7 @@ Only the range between just after the point and END-BOUND will be searched."
           (push-button))
          (info-link (Info-follow-nearest-node))
          (package-description-link (package-menu-describe-package))
+         (compilation-link (compile-goto-error))
          (t (message "There is no supported link at the point.")))))
 
 ;;;###autoload
