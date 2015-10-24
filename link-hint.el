@@ -143,9 +143,7 @@ Only the range between just after START-BOUND and the END-BOUND will be searched
 (defun link-hint--next-text-url (&optional end-bound)
   "Find the next visible plain text url location.
 Only the range between just after the point and END-BOUND will be searched."
-  (if end-bound
-      (link-hint--find-text-url (point) end-bound)
-    (link-hint--find-text-url (point))))
+  (link-hint--find-text-url (point) end-bound))
 
 (defun link-hint--find-property (property &optional start-bound end-bound)
   "Find visible location where PROPERTY exists.
@@ -171,9 +169,7 @@ searched."
   "Find the next visible location where PROPERTY exists.
 Only the range from between just after the point and END-BOUND will be
 searched."
-  (if end-bound
-      (link-hint--find-property property (point) end-bound)
-    (link-hint--find-property property (point))))
+  (link-hint--find-property property (point) end-bound))
 
 (defun link-hint--find-property-with-value
     (property value &optional start-bound end-bound)
@@ -205,9 +201,7 @@ searched. When VALUE is not found, nil will be returned."
   "Find the first visible location where PROPERTY has VALUE.
 Only the range from between just after the point and the END-BOUND will be
 searched. When VALUE is not found, nil will be returned."
-  (if end-bound
-      (link-hint--find-property-with-value property value (point) end-bound)
-    (link-hint--find-property-with-value property value (point))))
+  (link-hint--find-property-with-value property value (point) end-bound))
 
 (defun link-hint--not-ignored-p (type)
   "Return t if TYPE is not ignored else nil."
