@@ -83,17 +83,6 @@ Defaults to `avy-keys'."
     other-button-link)
   "List containing all suported link types.")
 
-(defvar link-hint-copy-ignore-types
-  '(help-link
-    info-link
-    package-description-link
-    package-keyword-link
-    package-install-link
-    compilation-link
-    other-button-link)
-  "Link types that the copy action will ignore.
-It defaults to the unsupported types.")
-
 (define-widget 'link-hint-link-type-set 'lazy
   "A set of link types supported by link-hint."
   :type '(set
@@ -116,6 +105,17 @@ It defaults to the unsupported types.")
   "Types to be ignored when selecting a url with avy."
   :group 'link-hint
   :type 'link-hint-link-type-set)
+
+(defvar link-hint-copy-ignore-types
+  '(help-link
+    info-link
+    package-description-link
+    package-keyword-link
+    package-install-link
+    compilation-link
+    other-button-link)
+  "Link types that the copy action will ignore.
+It defaults to the unsupported types.")
 
 (defcustom link-hint-act-on-multiple-ignore-types
   '(file-link
@@ -287,6 +287,7 @@ searched. When VALUE is not found, nil will be returned."
     (when (> (length number-list) 0)
       (apply #'min number-list))))
 
+;; TODO: reduce redundancy here
 (defun link-hint--next-link-pos (&optional end-bound)
   "Find the closest visible link of all types that are not ignored.
 Only the range between just after the point and END-BOUND will be searched."
@@ -369,9 +370,9 @@ Only the range between just after the point and END-BOUND will be searched."
           (htmlize-url (plist-get text-properties 'htmlize-link))
           (text-url (looking-at link-hint-url-regexp))
           (file-link (ffap-file-at-point))
+          ;; will work for attachments in addition to mail-tos and urls
           (mu4e-url (plist-get text-properties 'mu4e-url))
           (mu4e-att (plist-get text-properties 'mu4e-attnum))
-          ;; will work for attachments in addition to mail-tos and urls
           (help-link (plist-get text-properties 'help-args))
           (info-link (or (equal (plist-get text-properties 'font-lock-face)
                                 'info-xref)
@@ -400,9 +401,9 @@ Only the range between just after the point and END-BOUND will be searched."
          (htmlize-url (browse-url (cadr htmlize-url)))
          (text-url (browse-url-at-point))
          (file-link (find-file-at-point (ffap-file-at-point)))
+         ;; distinguish between opening in browser and view-atachment?
          (mu4e-url (mu4e~view-browse-url-from-binding))
          (mu4e-att (mu4e-view-open-attachment nil mu4e-att))
-         ;; distinguish between opening in browser and view-atachment?
          ((or help-link
               package-keyword-link
               package-install-link)
