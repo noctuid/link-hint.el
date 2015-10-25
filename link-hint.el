@@ -26,6 +26,8 @@
 (require 'browse-url)
 (unless (boundp 'link-hint-url-regexp)
   (require 'goto-addr))
+(require 'ffap)
+;; (require 'rx)
 
 (defgroup link-hint nil
   "Gives commands for operating on visible links with avy."
@@ -36,6 +38,12 @@
   goto-address-url-regexp
   "Regexp used to determine what constitutes a text url.
 Defaults to `goto-address-url-regxp'."
+  :group 'link-hint
+  :type 'regexp)
+
+(defcustom link-hint-maybe-file-regexp
+  (rx (or bol blank) (zero-or-one "~") "/" (1+ not-newline))
+  "Regexp used to determine what constitutes a potential file link."
   :group 'link-hint
   :type 'regexp)
 
@@ -60,6 +68,7 @@ Defaults to `avy-keys'."
 
 (defconst link-hint-all-types-list
   '(text-url
+    file-link
     shr-url
     htmlize-url
     mu4e-url
@@ -89,6 +98,7 @@ It defaults to the unsupported types.")
   "A set of link types supported by link-hint."
   :type '(set
           (const :tag "Text url" text-url)
+          (const :tag "File link openable with ffap" file-link)
           (const :tag "Simple HTML Renderer url" shr-url)
           (const :tag "Htmlize (org mode) url" htmlize-url)
           (const :tag "Mu4e url" mu4e-url)
@@ -108,7 +118,8 @@ It defaults to the unsupported types.")
   :type 'link-hint-link-type-set)
 
 (defcustom link-hint-act-on-multiple-ignore-types
-  '(mu4e-mailto
+  '(file-link
+    mu4e-mailto
     mu4e-attachment
     help-link
     info-link
@@ -121,7 +132,8 @@ Thes commands are `link-hint-open-multiple-links' and
   :type 'link-hint-link-type-set)
 
 (defcustom link-hint-act-on-all-ignore-types
-  '(mu4e-mailto
+  '(file-link
+    mu4e-mailto
     mu4e-attachment
     help-link
     info-link
@@ -133,32 +145,56 @@ These commands are `link-hint-open-all-links' and
   :group 'link-hint
   :type 'link-hint-link-type-set)
 
-(defun link-hint--find-text-url (&optional start-bound end-bound)
-  "Find the first visible plain text url location.
-Only the range between just after START-BOUND and the END-BOUND will be searched."
+(defun link-hint--find-regexp (search-regexp &optional start-bound end-bound)
+  "Find the first visible occurrence of SEARCH-REGEXP.
+Only the range between just after START-BOUND and the END-BOUND will be
+searched."
   (save-excursion
     (let* ((start-bound (or start-bound (window-start)))
            (end-bound (or end-bound (window-end)))
-           (match-pos
-            (progn (goto-char start-bound)
-                   (right-char)
-                   (re-search-forward link-hint-url-regexp end-bound t)))
-           (match-save-pos (when match-pos (match-beginning 0))))
-      (while (and match-pos
-                  (invisible-p (1- match-pos)))
-        (setq match-pos
-              (re-search-forward link-hint-url-regexp end-bound t))
-        (when match-pos
-          (setq match-save-pos (match-beginning 0))))
-      (when (and match-save-pos
-                 (not (= match-save-pos start-bound))
-                 (not (invisible-p match-save-pos)))
-        match-save-pos))))
+           match-pos)
+      (goto-char start-bound)
+      (right-char)
+      (while (and (re-search-forward search-regexp end-bound t)
+                  (setq match-pos (match-beginning 0))
+                  (invisible-p match-pos)))
+      (when (and match-pos
+                 (not (invisible-p match-pos)))
+        match-pos))))
 
-(defun link-hint--next-text-url (&optional end-bound)
-  "Find the next visible plain text url location.
+(defun link-hint--next-regexp (search-regexp &optional end-bound)
+  "Find the next visible occurrence of SEARCH-REGEXP.
 Only the range between just after the point and END-BOUND will be searched."
-  (link-hint--find-text-url (point) end-bound))
+  (link-hint--find-regexp search-regexp (point) end-bound))
+
+(defun link-hint--find-file-link (&optional start-bound end-bound)
+  "Find the first file link.
+Only the range between just after START-BOUND and the END-BOUND will be
+searched."
+  (save-excursion
+    (let ((start-bound (or start-bound (window-start)))
+          (end-bound (or end-bound (window-end)))
+          file-link-pos)
+      (goto-char start-bound)
+      (while (and
+              (setq file-link-pos
+                    (link-hint--find-regexp link-hint-maybe-file-regexp
+                                            (point) end-bound))
+              (progn
+                (goto-char file-link-pos)
+                (when (looking-at (rx blank))
+                  (right-char)
+                  (setq file-link-pos (point)))
+                t)
+              (not (ffap-file-at-point))))
+      (when (and file-link-pos
+                 (ffap-file-at-point))
+        file-link-pos))))
+
+(defun link-hint--next-file-link (&optional end-bound)
+  "Find the next visible file link.
+Only the range between just after the point and END-BOUND will be searched."
+  (link-hint--find-file-link (point) end-bound))
 
 (defun link-hint--find-button (&optional start-bound end-bound)
   "Find the first visible button location.
@@ -256,7 +292,10 @@ searched. When VALUE is not found, nil will be returned."
 Only the range between just after the point and END-BOUND will be searched."
   (let* ((end-bound (or end-bound (window-end)))
          (text-url-pos (when (link-hint--not-ignored-p 'text-url)
-                         (link-hint--next-text-url end-bound)))
+                         (link-hint--next-regexp link-hint-url-regexp
+                                                 end-bound)))
+         (file-link-pos (when (link-hint--not-ignored-p 'file-link)
+                          (link-hint--next-file-link end-bound)))
          (shr-url-pos (when (link-hint--not-ignored-p 'shr-url)
                         (link-hint--next-property 'shr-url end-bound)))
          (htmlize-url-pos (when (link-hint--not-ignored-p 'htmlize-url)
@@ -306,6 +345,7 @@ Only the range between just after the point and END-BOUND will be searched."
             (link-hint--next-button)))
          (closest-pos
           (link-hint--min (list text-url-pos
+                                file-link-pos
                                 shr-url-pos
                                 htmlize-url-pos
                                 mu4e-url-pos
@@ -328,6 +368,7 @@ Only the range between just after the point and END-BOUND will be searched."
           (shr-url (plist-get text-properties 'shr-url))
           (htmlize-url (plist-get text-properties 'htmlize-link))
           (text-url (looking-at link-hint-url-regexp))
+          (file-link (ffap-file-at-point))
           (mu4e-url (plist-get text-properties 'mu4e-url))
           (mu4e-att (plist-get text-properties 'mu4e-attnum))
           ;; will work for attachments in addition to mail-tos and urls
@@ -358,6 +399,7 @@ Only the range between just after the point and END-BOUND will be searched."
    (cond (shr-url (browse-url shr-url))
          (htmlize-url (browse-url (cadr htmlize-url)))
          (text-url (browse-url-at-point))
+         (file-link (find-file-at-point (ffap-file-at-point)))
          (mu4e-url (mu4e~view-browse-url-from-binding))
          (mu4e-att (mu4e-view-open-attachment nil mu4e-att))
          ;; distinguish between opening in browser and view-atachment?
@@ -382,6 +424,7 @@ Only the range between just after the point and END-BOUND will be searched."
          (htmlize-url (kill-new (cadr htmlize-url)))
          (text-url (let ((url (url-get-url-at-point)))
                      (when url (kill-new url))))
+         (file-link (kill-new (ffap-file-at-point)))
          (mu4e-url (kill-new mu4e-url))
          (mu4e-att (mu4e-view-save-attachment-single nil mu4e-att))
          (t (message "There is no supported link at the point.")))))
