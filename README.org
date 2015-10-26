@@ -8,15 +8,17 @@ Using this package to install this package:
 Currently the following types of links are supported:
 
 - Plain text urls (e.g. =http://www.github.com/=; includes mu4e and irc urls)
-- Shr urls (e.g those in elfeed and html mu4e messages)
+- Shr urls (e.g. those in elfeed and html mu4e messages, eww urls, etc.)
 - Htmlize/org mode urls
 - Mu4e mailto addresses
 - Mu4e attachments
 - Help mode links
 - Info mode links
 - Package menu links (further description, install buttons, and keyword buttons)
+- Compilation mode links
+- Other button links (e.g. WoMan links)
 
-Feel free to request support for any useful link type I may have missed.
+Feel free to request support for any useful link type I may have missed. Also, if you think it would be beneficial to have a more specific link type split from a more generic link type, feel free to make an issue. For example, there may be some specific type of button you want to ignore or use in a custom command without affecting other buttons.
 
 * Configuration
 ** Browser Choice
