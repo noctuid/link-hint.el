@@ -80,6 +80,7 @@ Defaults to `avy-keys'."
     package-keyword-link
     package-install-link
     compilation-link
+    woman-button-link
     other-button-link)
   "List containing all suported link types.")
 
@@ -98,7 +99,9 @@ Defaults to `avy-keys'."
           (const :tag "Package.el menu links" package-description-link)
           (const :tag "Package.el keyword buttons" package-keyword-link)
           (const :tag "Package.el install buttons" package-install-link)
-          (const :tag "Compilation mode link" compilation-link)))
+          (const :tag "Compilation mode link" compilation-link)
+          (const :tag "WoMan button link" woman-button-link)
+          (const :tag "Other button link" other-button-link)))
 
 (defcustom link-hint-ignore-types
   nil
@@ -113,6 +116,7 @@ Defaults to `avy-keys'."
     package-keyword-link
     package-install-link
     compilation-link
+    woman-button-link
     other-button-link)
   "Link types that the copy action will ignore.
 It defaults to the unsupported types.")
@@ -124,6 +128,7 @@ It defaults to the unsupported types.")
     help-link
     info-link
     compilation-link
+    woman-button-link
     other-button-link)
   "Types of links to ignore with commands that act on multiple visible links.
 Thes commands are `link-hint-open-multiple-links' and
@@ -138,6 +143,7 @@ Thes commands are `link-hint-open-multiple-links' and
     help-link
     info-link
     compilation-link
+    woman-button-link
     other-button-link)
   "Types of links to ignore with commands that act on all visible links.
 These commands are `link-hint-open-all-links' and
@@ -196,17 +202,22 @@ searched."
 Only the range between just after the point and END-BOUND will be searched."
   (link-hint--find-file-link (point) end-bound))
 
+;; only using for woman since need `next-single-char-property-change' (slow)
 (defun link-hint--find-button (&optional start-bound end-bound)
   "Find the first visible button location.
 Only the range between just after START-BOUND and the END-BOUND will be
 searched."
-  (let* ((start-bound (or start-bound (window-start)))
-         (end-bound (or end-bound (window-end)))
-         (button (next-button start-bound nil))
-         (button-pos (when button (button-start button))))
-    (when (and button-pos
-               (< button-pos end-bound)
-               (not (invisible-p button-pos)))
+  (save-excursion
+    (let* ((start-bound (or start-bound (window-start)))
+           (end-bound (or end-bound (window-end)))
+           button
+           button-pos)
+      (goto-char start-bound)
+      (while (and (setq button (next-button (point) nil))
+                  (setq button-pos (button-start button))
+                  (goto-char button-pos)
+                  (< button-pos end-bound)
+                  (invisible-p button-pos)))
       button-pos)))
 
 (defun link-hint--next-button (&optional end-bound)
@@ -220,17 +231,14 @@ Only the range from between just after the START-BOUND and the END-BOUND will be
 searched."
   (save-excursion
     (let* ((start-bound (or start-bound (window-start)))
-           (end-bound (or end-bound (window-end)))
-           (match-pos (goto-char
-                       (next-single-property-change start-bound property
-                                                    nil end-bound))))
-      (while (not (or (and (plist-get (text-properties-at (point)) property)
-                           (not (invisible-p (point))))
-                      ;; next-single-property returns limit if match not found
-                      (= match-pos end-bound)))
-        (setq match-pos
-              (goto-char
-               (next-single-property-change (point) property nil end-bound))))
+           (end-bound (or end-bound (window-end))))
+      (goto-char start-bound)
+      (while
+          (and (goto-char (next-single-property-change (point) property
+                                                       nil end-bound))
+               ;; next-single-property returns limit if match not found
+               (not (= (point) end-bound))
+               (invisible-p (point))))
       (when (plist-get (text-properties-at (point)) property)
         (point)))))
 
@@ -341,9 +349,15 @@ Only the range between just after the point and END-BOUND will be searched."
          (compilation-link-pos
           (when (link-hint--not-ignored-p 'compilation-link)
             (link-hint--next-property 'compilation-message end-bound)))
+         (woman-button-link-pos
+          ;; next-single-char-property-change is slow but is necessary for
+          ;; see also buttons in woman mode
+          (when (and (equal major-mode 'woman-mode)
+                     (link-hint--not-ignored-p 'woman-button-link))
+            (link-hint--next-button end-bound)))
          (other-button-link-pos
           (when (link-hint--not-ignored-p 'other-button-link)
-            (link-hint--next-button)))
+            (link-hint--next-property 'button end-bound)))
          (closest-pos
           (link-hint--min (list text-url-pos
                                 file-link-pos
@@ -359,6 +373,7 @@ Only the range between just after the point and END-BOUND will be searched."
                                 package-keyword-link-pos
                                 package-install-link-pos
                                 compilation-link-pos
+                                woman-button-link-pos
                                 other-button-link-pos))))
     (when closest-pos
       closest-pos)))
@@ -400,7 +415,6 @@ Only the range between just after the point and END-BOUND will be searched."
    (cond (shr-url (browse-url shr-url))
          (htmlize-url (browse-url (cadr htmlize-url)))
          (text-url (browse-url-at-point))
-         (file-link (find-file-at-point (ffap-file-at-point)))
          ;; distinguish between opening in browser and view-atachment?
          (mu4e-url (mu4e~view-browse-url-from-binding))
          (mu4e-att (mu4e-view-open-attachment nil mu4e-att))
@@ -413,6 +427,7 @@ Only the range between just after the point and END-BOUND will be searched."
          (compilation-link (compile-goto-error))
          ;; lowest precedence
          (other-button-link (push-button))
+         (file-link (find-file-at-point (ffap-file-at-point)))
          (t (message "There is no supported link at the point.")))))
 
 ;;;###autoload
