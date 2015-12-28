@@ -27,13 +27,15 @@ Feel free to request support for any useful link type I may have missed. Also, i
 #+begin_src emacs-lisp
 ;; Use chromium to open urls
 (setq browse-url-browser-function 'browse-url-chromium)
+
 ;; Use firefox to open urls
 (setq browse-url-browser-function 'browse-url-firefox)
+
 ;; Use qutebrowser to open urls
-(setq browse-url-generic-program "qutebrowser")
-;; You can alternatively change this setting in the config
-(setq browse-url-generic-args '("--target" "tab"))
 (setq browse-url-browser-function 'browse-url-generic)
+(setq browse-url-generic-program "qutebrowser")
+;; Open urls in a new tab instead of window; can also be set in the config file
+(setq browse-url-generic-args '("--target" "tab"))
 #+end_src
 
 ** Provided Commands
@@ -66,7 +68,7 @@ This package does not bind any commands by default.
 ** Creating New Commands
 The user can create new commands to do something other than copy or open a link using the ~link-hint--link-action~, ~link-hint--multiple-link-action~, and ~link-hint--all-links-action~ functions. Each takes a single function as an argument that will be called with the point at the start of the selected link(s).
 
-Here is an example of a command that downloads a text url, ignoring other link types. As [[https://github.com/zk-phi/download-region][download-region]] does not have commands for downloading a url passed in as a string or the url under the point, the resulting command is somewhat convoluted.
+Here is an example of a command that downloads a text url, ignoring other link types. As [[https://github.com/zk-phi/download-region][download-region]] does not have functions for downloading a url passed in as a string or the url under the point, the resulting command is somewhat convoluted.
 #+begin_src emacs-lisp
 (defun link-hint-download-link ()
   "Use avy to select and download a text URL with download.region.el."
