@@ -56,9 +56,34 @@ This package does not bind any commands by default.
   "Open all visible mu4e attachments."
   (interactive)
   (let ((link-hint-ignore-types
-         (remove 'mu4e-attachment link-hint-all-types-list))
+         (remove 'mu4e-attachment link-hint-all-types))
         link-hint-act-on-all-ignore-types)
     (link-hint-open-all-links)))
 #+end_src
 
-~link-hint-copy-ignore-types~ can also be set by the user. However, note that by default it contains the types that there is no copy action for. Removing these types will result in some useless avy overlays over links (selecting them will have no effect).
+~link-hint-copy-ignore-types~ can also be set by the user. However, note that by default it contains the types that there is no copy action for. Removing these types will result in some useless avy overlays over links (selecting them will have no effect). If you think some link type could have a useful copy action, feel free to make an issue suggesting one.
+
+** Creating New Commands
+The user can create new commands to do something other than copy or open a link using the ~link-hint--link-action~, ~link-hint--multiple-link-action~, and ~link-hint--all-links-action~ functions. Each takes a single function as an argument that will be called with the point at the start of the selected link(s).
+
+Here is an example of a command that downloads a text url, ignoring other link types. As [[https://github.com/zk-phi/download-region][download-region]] does not have commands for downloading a url passed in as a string or the url under the point, the resulting command is somewhat convoluted.
+#+begin_src emacs-lisp
+(defun link-hint-download-link ()
+  "Use avy to select and download a text URL with download.region.el."
+  (interactive)
+  (let ((link-hint-ignore-types
+         (remove 'text-url link-hint-all-types)))
+    (link-hint--link-action
+     (lambda ()
+       (set-mark (cdr (thing-at-point-bounds-of-url-at-point)))
+       (download-region-as-url)
+       (keyboard-quit)))))
+#+end_src
+
+For reference, this is what ~link-hint-open-link~ looks like:
+#+begin_src emacs-lisp
+(defun link-hint-open-link ()
+  "Use avy to select and open a visible link."
+  (interactive)
+  (link-hint--link-action #'link-hint-open-link-at-point))
+#+end_src

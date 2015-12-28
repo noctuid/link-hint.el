@@ -81,7 +81,7 @@ Defaults to `avy-keys'."
   :group 'link-hint
   :type '(repeat :tag "Keys" (choice (character :tag "char"))))
 
-(defconst link-hint-all-types-list
+(defconst link-hint-all-types
   '(text-url
     file-link
     shr-url
