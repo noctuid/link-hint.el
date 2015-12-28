@@ -20,6 +20,14 @@ Currently the following types of links are supported:
 
 Feel free to request support for any useful link type I may have missed. Also, if you think it would be beneficial to have a more specific link type split from a more generic link type, feel free to make an issue. For example, there may be some specific type of button you want to ignore or use in a custom command without affecting other buttons.
 
+* Similar
+There is also [[https://github.com/abo-abo/ace-link][ace-link]] which I didn't know about when writing this package. The main functional differences at the time of writing are as follows:
+
+- =link-hint.el= doesn't have separate commands for different types of links. One command covers all types, but you can make your own command for specific link types if you want to.
+- More link types are supported (e.g. plain text urls, file path links, and mu4e links).
+- Operating on multiple links at once is supported.
+- Alternate actions are supported for some link types (copying or user-defined actions).
+
 * Configuration
 ** Browser Choice
 ~browse-url~ is used for opening urls, so in the case that the desired browser is not being used by default, the user can set ~browse-url-browser-function~:
