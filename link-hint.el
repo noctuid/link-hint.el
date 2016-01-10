@@ -81,6 +81,24 @@ Defaults to `avy-keys'."
   :group 'link-hint
   :type '(repeat :tag "Keys" (choice (character :tag "char"))))
 
+(defcustom link-hint-avy-all-windows
+  avy-all-windows
+  "Determine the list of windows to consider in search of links.
+Defaults to `avy-all-windows'."
+  :type
+  '(choice
+    (const :tag "All Frames" all-frames)
+    (const :tag "This Frame" t)
+    (const :tag "This Window" nil)))
+
+;; (defcustom link-hint-avy-all-windows-alt
+;;   avy-all-windows-alt
+;;   "The alternative `link-hint-avy-all-windows' for use with
+;; \\[universal-argument]. Defaults to `avy-all-windows-alt'."
+;;   :type '(choice
+;;           (const :tag "All windows on the current frame" t)
+;;           (const :tag "All windows on all frames" all-frames)))
+
 (defconst link-hint-all-types
   '(text-url
     file-link
@@ -466,28 +484,30 @@ Only the range between just after the point and END-BOUND will be searched."
 When REQUIRE-MULTIPLE-LINKS is non-nil, this function will return nil if there
 is only one visible link. When GET-LINKS is non-nil, the list of visible links
 will be returned instead of calling avy then ACTION."
-  (save-excursion
-    (goto-char (1- (window-start)))
-    (let* ((end-bound (window-end))
-           (current-link (link-hint--next-link-pos end-bound))
-           (current-window (get-buffer-window))
-           link-positions
-           ;; prevent window from shifting avy overlays out of view
-           (scroll-margin 0)
-           avy-all-windows)
-      (while current-link
-        (push (cons current-link current-window) link-positions)
-        (goto-char current-link)
-        (setq current-link (link-hint--next-link-pos end-bound)))
-      (when (and link-positions
-                 (if require-multiple-links
-                     (> (length link-positions) 1)
-                   t))
-        (if get-links
-            link-positions
-          (avy--process (nreverse link-positions)
-                        (avy--style-fn link-hint-avy-style))
-          (funcall action))))))
+  (let ((avy-all-windows link-hint-avy-all-windows)
+        ;; (avy-all-windows-alt link-hint-avy-all-windows-alt)
+        link-positions)
+    (avy-dowindows current-prefix-arg
+      (save-excursion
+        (goto-char (1- (window-start)))
+        (let* ((end-bound (window-end))
+               (current-link (link-hint--next-link-pos end-bound))
+               (current-window (get-buffer-window))
+               ;; prevent window from shifting avy overlays out of view
+               (scroll-margin 0))
+          (while current-link
+            (push (cons current-link current-window) link-positions)
+            (goto-char current-link)
+            (setq current-link (link-hint--next-link-pos end-bound))))))
+    (when (and link-positions
+               (if require-multiple-links
+                   (> (length link-positions) 1)
+                 t))
+      (if get-links
+          link-positions
+        (avy--process (nreverse link-positions)
+                      (avy--style-fn link-hint-avy-style))
+        (funcall action)))))
 
 ;;;###autoload
 (defun link-hint-open-link ()
