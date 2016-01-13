@@ -193,7 +193,9 @@ searched."
            (end-bound (or end-bound (window-end)))
            match-pos)
       (goto-char start-bound)
-      (right-char)
+      (condition-case err
+          (right-char)
+        ('error nil))
       (while (and (re-search-forward search-regexp end-bound t)
                   (setq match-pos (match-beginning 0))
                   (invisible-p match-pos)))
