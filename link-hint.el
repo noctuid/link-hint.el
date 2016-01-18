@@ -448,7 +448,7 @@ Only the range between just after the point and END-BOUND will be searched."
   (interactive)
   (link-hint--types-at-point-let-wrapper
    (cond (shr-url (browse-url shr-url))
-         (htmlize-url (browse-url (cadr htmlize-url)))
+         (htmlize-url (org-open-at-point))
          (text-url (browse-url-at-point))
          ;; distinguish between opening in browser and view-atachment?
          (mu4e-url (mu4e~view-browse-url-from-binding))
