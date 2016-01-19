@@ -78,6 +78,15 @@ This package provides the following commands for operating on links:
 
 This package does not bind any commands by default.
 
+** Overriding Avy Settings
+=link-hint.el= supports overriding avy's settings. For example, if you want to use a different avy style just for link hinting, you can set ~link-hint-avy-style~:
+
+#+begin_src emacs-lisp
+(setq link-hint-avy-style 'de-bruijn)
+#+end_src
+
+These settings will default to the corresponding avy setting (e.g. ~link-hint-avy-style~ defaults to the value of ~avy-style~), so you only need to set these if you want different values from your avy configuration. Currently ~link-hint-avy-style~, ~link-hint-avy-keys~, ~link-hint-avy-all-windows~, ~link-hint-avy-all-windows-alt~, and ~link-hint-avy-background~ can be set. Also, ~link-hint-ignored-modes~ corresponds to ~avy-ignored-modes~.
+
 ** Ignoring Link Types
 ~link-hint-ignore-types~, ~link-hint-act-on-multiple-ignore-types~, and ~link-hint-act-on-all-ignore-types~ can be set by the user to change which link types will be operated on. For example, by default ~link-hint-open-all-links~ will ignore mu4e mailto addresses, mu4e attachments, info links, and help links. This is because it usually doesn't make sense to open more than one of these links types. In some cases, it may be useful to set these variables locally for certain modes. They can also be used to create more specific commands:
 #+begin_src emacs-lisp

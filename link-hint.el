@@ -91,13 +91,25 @@ Defaults to `avy-all-windows'."
     (const :tag "This Frame" t)
     (const :tag "This Window" nil)))
 
-;; (defcustom link-hint-avy-all-windows-alt
-;;   avy-all-windows-alt
-;;   "The alternative `link-hint-avy-all-windows' for use with
-;; \\[universal-argument]. Defaults to `avy-all-windows-alt'."
-;;   :type '(choice
-;;           (const :tag "All windows on the current frame" t)
-;;           (const :tag "All windows on all frames" all-frames)))
+(defcustom link-hint-avy-all-windows-alt
+  ;; until can depend on new release of avy
+  (if (boundp 'avy-all-windows-alt)
+      avy-all-windows-alt
+    nil)
+  "The alternative `link-hint-avy-all-windows' for use with
+\\[universal-argument]. Defaults to `avy-all-windows-alt'."
+  :type '(choice
+          (const :tag "All windows on the current frame" t)
+          (const :tag "All windows on all frames" all-frames)))
+
+(defcustom link-hint-avy-background avy-background
+  "When non-nil, a gray background will be added during the selection.
+Defaults to `avy-background'."
+  :type 'boolean)
+
+(defcustom link-hint-ignored-modes avy-ignored-modes
+  "List of modes to ignore when searching for links.
+Defaults to `avy-ignored-modes'.")
 
 (defconst link-hint-all-types
   '(text-url
@@ -517,7 +529,10 @@ When REQUIRE-MULTIPLE-LINKS is non-nil, this function will return nil if there
 is only one visible link. When GET-LINKS is non-nil, the list of visible links
 will be returned instead of calling avy then ACTION."
   (let ((avy-all-windows link-hint-avy-all-windows)
-        ;; (avy-all-windows-alt link-hint-avy-all-windows-alt)
+        (avy-all-windows-alt link-hint-avy-all-windows-alt)
+        (avy-background link-hint-avy-background)
+        (avy-ignored-modes link-hint-ignored-modes)
+        (avy-keys link-hint-avy-keys)
         link-positions)
     (avy-dowindows current-prefix-arg
       (save-excursion
