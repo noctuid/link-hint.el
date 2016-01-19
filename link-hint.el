@@ -454,6 +454,24 @@ Only the range between just after the point and END-BOUND will be searched."
           (other-button-link (button-at (point))))
      ,body))
 
+;; TODO consider having variables in let-wrapper cover everything in all-types
+(defun link-hint--link-at-point-p ()
+  (link-hint--types-at-point-let-wrapper
+   (when (or shr-url
+             htmlize-url
+             text-url
+             file-link
+             mu4e-url
+             mu4e-att
+             help-link
+             info-link
+             package-description-link
+             package-keyword-link
+             package-install-link
+             compilation-link
+             other-button-link)
+     t)))
+
 ;;;###autoload
 (defun link-hint-open-link-at-point ()
   "Open a link of any supported type at the point."
@@ -503,9 +521,14 @@ will be returned instead of calling avy then ACTION."
         link-positions)
     (avy-dowindows current-prefix-arg
       (save-excursion
-        (goto-char (1- (window-start)))
+        (goto-char (window-start))
         (let* ((end-bound (window-end))
-               (current-link (link-hint--next-link-pos end-bound))
+               ;; as all "next-" functions are designed to look after the point,
+               ;; check if there is a link at the point the first time in order
+               ;; to catch links that are at the beginning of the window/buffer
+               (current-link (if (link-hint--link-at-point-p)
+                                 (point)
+                               (link-hint--next-link-pos end-bound)))
                (current-window (get-buffer-window))
                ;; prevent window from shifting avy overlays out of view
                (scroll-margin 0))
