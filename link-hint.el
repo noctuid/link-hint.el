@@ -346,7 +346,8 @@ searched. When VALUE is not found, nil will be returned."
   "Find the closest visible link of all types that are not ignored.
 Only the range between just after the point and END-BOUND will be searched."
   (let* ((end-bound (or end-bound (window-end)))
-         (text-url-pos (when (link-hint--not-ignored-p 'text-url)
+         (text-url-pos (when (and (link-hint--not-ignored-p 'text-url)
+                                  (not (equal major-mode 'org-mode)))
                          (link-hint--next-regexp link-hint-url-regexp
                                                  end-bound)))
          (file-link-pos (when (link-hint--not-ignored-p 'file-link)
