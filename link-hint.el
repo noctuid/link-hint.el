@@ -557,9 +557,15 @@ will be returned instead of calling avy then ACTION."
                  t))
       (if get-links
           link-positions
-        (avy--process (nreverse link-positions)
-                      (avy--style-fn link-hint-avy-style))
-        (funcall action)))))
+        (save-window-excursion
+          (save-excursion
+            (cond ((> (length link-positions) 1)
+                   (avy--process (nreverse link-positions)
+                                 (avy--style-fn link-hint-avy-style)))
+                  (t
+                   (select-window (cdar link-positions))
+                   (goto-char (caar link-positions))))
+            (funcall action)))))))
 
 ;;;###autoload
 (defun link-hint-open-link ()
