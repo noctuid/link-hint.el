@@ -265,17 +265,26 @@ Only the range between just after the point and END-BOUND will be searched."
 Only the range from between just after the START-BOUND and the END-BOUND will be
 searched."
   (save-excursion
-    (let* ((start-bound (or start-bound (window-start)))
-           (end-bound (or end-bound (window-end))))
+    (let ((start-bound (or start-bound (window-start)))
+          (end-bound (or end-bound (window-end)))
+          first-pos-without-prop
+          first-pos-with-prop)
       (goto-char start-bound)
       (while
-          (and (goto-char (next-single-property-change (point) property
-                                                       nil end-bound))
-               ;; next-single-property returns limit if match not found
-               (not (= (point) end-bound))
-               (invisible-p (point))))
-      (when (plist-get (text-properties-at (point)) property)
-        (point)))))
+          (progn
+            (setq first-pos-without-prop nil
+                  first-pos-with-prop nil)
+            (setq first-pos-without-prop
+                  (text-property-any (point) end-bound property nil))
+            (when first-pos-without-prop
+              (goto-char first-pos-without-prop)
+              (setq first-pos-with-prop
+                    (text-property-not-all (point) end-bound property nil)))
+            (and first-pos-with-prop
+                 (invisible-p first-pos-with-prop)))
+        (goto-char first-pos-with-prop))
+      (when first-pos-with-prop
+        first-pos-with-prop))))
 
 (defun link-hint--next-property (property &optional end-bound)
   "Find the next visible location where PROPERTY exists.
@@ -283,31 +292,33 @@ Only the range from between just after the point and END-BOUND will be
 searched."
   (link-hint--find-property property (point) end-bound))
 
+;; TODO get rid of code duplication here
 (defun link-hint--find-property-with-value
     (property value &optional start-bound end-bound)
-  "Find the first visible location where PROPERTY has VALUE.
+  "Find visible location where PROPERTY exists.
 Only the range from between just after the START-BOUND and the END-BOUND will be
-searched. When VALUE is not found, nil will be returned."
+searched."
   (save-excursion
     (let ((start-bound (or start-bound (window-start)))
           (end-bound (or end-bound (window-end)))
-          (next-change-pos (next-single-property-change start-bound property
-                                                        nil end-bound))
-          last-change-pos
-          match-pos)
-      (while (and (not match-pos)
-                  (not (equal next-change-pos last-change-pos)))
-        (setq last-change-pos next-change-pos)
-        (goto-char next-change-pos)
-        (if (and (equal (plist-get (text-properties-at (point)) property)
-                        value)
-                 (not (invisible-p (point))))
-            (setq match-pos (point))
-          (setq next-change-pos
-                (next-single-property-change (point) property
-                                             nil end-bound))))
-      (when match-pos
-        match-pos))))
+          first-pos-without-prop
+          first-pos-with-prop)
+      (goto-char start-bound)
+      (while
+          (progn
+            (setq first-pos-without-prop nil
+                  first-pos-with-prop nil)
+            (setq first-pos-without-prop
+                  (text-property-not-all (point) end-bound property value))
+            (when first-pos-without-prop
+              (goto-char first-pos-without-prop)
+              (setq first-pos-with-prop
+                    (text-property-any (point) end-bound property value)))
+            (and first-pos-with-prop
+                 (invisible-p first-pos-with-prop)))
+        (goto-char first-pos-with-prop))
+      (when first-pos-with-prop
+        first-pos-with-prop))))
 
 (defun link-hint--next-property-with-value (property value &optional end-bound)
   "Find the first visible location where PROPERTY has VALUE.
