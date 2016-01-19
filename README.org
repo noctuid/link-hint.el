@@ -29,6 +29,25 @@ There is also [[https://github.com/abo-abo/ace-link][ace-link]] which I didn't k
 - Alternate actions are supported for some link types (copying or user-defined actions).
 
 * Configuration
+** Basic Setup
+Basic usage of this package only requires making key bindings for ~link-hint-open-link~ or other commands. Here is an example configuration using [[https://github.com/jwiegley/use-package][use-package]]:
+#+begin_src emacs-lisp
+(use-package link-hint
+  :ensure t
+  :bind
+  ("C-c l o" . link-hint-open-link)
+  ("C-c l c" . link-hint-copy-link))
+#+end_src
+
+Here is an example configuration for evil:
+#+begin_src emacs-lisp
+(use-package link-hint
+  :ensure t
+  ;; when installed with package.el, link-hint.el will have proper autoloads
+  :defer t)
+
+(define-key evil-normal-state-map (kbd "SPC f") 'link-hint-open-link)
+#+end_src
 ** Browser Choice
 ~browse-url~ is used for opening urls, so in the case that the desired browser is not being used by default, the user can set ~browse-url-browser-function~:
 
