@@ -44,6 +44,7 @@
 (require 'ffap)
 ;; (require 'rx)
 
+;;; Options
 (defgroup link-hint nil
   "Gives commands for operating on visible links with avy."
   :group 'convenience
@@ -196,6 +197,7 @@ These commands are `link-hint-open-all-links' and
   :group 'link-hint
   :type 'link-hint-link-type-set)
 
+;;; Link Finding Helper Functions
 (defun link-hint--find-regexp (search-regexp &optional start-bound end-bound)
   "Find the first visible occurrence of SEARCH-REGEXP.
 Only the range between just after START-BOUND and the END-BOUND will be
@@ -437,6 +439,7 @@ Only the range between just after the point and END-BOUND will be searched."
     (when closest-pos
       closest-pos)))
 
+;;; Commands for Operating on a Link at the Point
 (defmacro link-hint--types-at-point-let-wrapper (body)
   "Wrap BODY in let statement that checks for supported types at the point."
   `(let* ((text-properties (text-properties-at (point)))
@@ -522,6 +525,7 @@ Only the range between just after the point and END-BOUND will be searched."
          (mu4e-att (mu4e-view-save-attachment-single nil mu4e-att))
          (t (message "There is no supported link at the point.")))))
 
+;;; Avy Commands
 (defun link-hint--link-action
     (action &optional require-multiple-links get-links)
   "Jump to a url using avy and execute ACTION.
