@@ -199,26 +199,21 @@ These commands are `link-hint-open-all-links' and
 
 ;;; Link Finding Helper Functions
 (defun link-hint--find-regexp (search-regexp &optional start-bound end-bound)
-  "Find the first visible occurrence of SEARCH-REGEXP.
+  "Find the first occurrence of SEARCH-REGEXP.
 Only the range between just after START-BOUND and the END-BOUND will be
 searched."
   (save-excursion
-    (let* ((start-bound (or start-bound (window-start)))
-           (end-bound (or end-bound (window-end)))
-           match-pos)
+    (let ((start-bound (or start-bound (window-start)))
+          (end-bound (or end-bound (window-end))))
       (goto-char start-bound)
       (condition-case err
           (right-char)
         ('error nil))
-      (while (and (re-search-forward search-regexp end-bound t)
-                  (setq match-pos (match-beginning 0))
-                  (invisible-p match-pos)))
-      (when (and match-pos
-                 (not (invisible-p match-pos)))
-        match-pos))))
+      (when (re-search-forward search-regexp end-bound t)
+        (match-beginning 0)))))
 
 (defun link-hint--next-regexp (search-regexp &optional end-bound)
-  "Find the next visible occurrence of SEARCH-REGEXP.
+  "Find the next occurrence of SEARCH-REGEXP.
 Only the range between just after the point and END-BOUND will be searched."
   (link-hint--find-regexp search-regexp (point) end-bound))
 
@@ -247,35 +242,31 @@ searched."
         file-link-pos))))
 
 (defun link-hint--next-file-link (&optional end-bound)
-  "Find the next visible file link.
+  "Find the next file link.
 Only the range between just after the point and END-BOUND will be searched."
   (link-hint--find-file-link (point) end-bound))
 
 ;; only using for woman since need `next-single-char-property-change' (slow)
 (defun link-hint--find-button (&optional start-bound end-bound)
-  "Find the first visible button location.
+  "Find the first button location.
 Only the range between just after START-BOUND and the END-BOUND will be
 searched."
-  (save-excursion
-    (let* ((start-bound (or start-bound (window-start)))
-           (end-bound (or end-bound (window-end)))
-           button
-           button-pos)
-      (goto-char start-bound)
-      (while (and (setq button (next-button (point) nil))
-                  (setq button-pos (button-start button))
-                  (goto-char button-pos)
-                  (< button-pos end-bound)
-                  (invisible-p button-pos)))
-      button-pos)))
+  (let ((start-bound (or start-bound (window-start)))
+        (end-bound (or end-bound (window-end)))
+        button)
+    (save-restriction
+      (narrow-to-region start-bound end-bound)
+      (setq button (next-button (point)))
+      (when button
+        (button-start button)))))
 
 (defun link-hint--next-button (&optional end-bound)
-  "Find the next visible button location.
+  "Find the next button location.
 Only the range between just after the point and END-BOUND will be searched."
   (link-hint--find-button (point) end-bound))
 
 (defun link-hint--find-property (property &optional start-bound end-bound)
-  "Find visible location where PROPERTY exists.
+  "Find location where PROPERTY exists.
 Only the range from between just after the START-BOUND and the END-BOUND will be
 searched."
   (save-excursion
@@ -284,24 +275,17 @@ searched."
           first-pos-without-prop
           first-pos-with-prop)
       (goto-char start-bound)
-      (while
-          (progn
-            (setq first-pos-without-prop nil
-                  first-pos-with-prop nil)
-            (setq first-pos-without-prop
-                  (text-property-any (point) end-bound property nil))
-            (when first-pos-without-prop
-              (goto-char first-pos-without-prop)
-              (setq first-pos-with-prop
-                    (text-property-not-all (point) end-bound property nil)))
-            (and first-pos-with-prop
-                 (invisible-p first-pos-with-prop)))
-        (goto-char first-pos-with-prop))
+      (setq first-pos-without-prop
+            (text-property-any (point) end-bound property nil))
+      (when first-pos-without-prop
+        (goto-char first-pos-without-prop)
+        (setq first-pos-with-prop
+              (text-property-not-all (point) end-bound property nil)))
       (when first-pos-with-prop
         first-pos-with-prop))))
 
 (defun link-hint--next-property (property &optional end-bound)
-  "Find the next visible location where PROPERTY exists.
+  "Find the next location where PROPERTY exists.
 Only the range from between just after the point and END-BOUND will be
 searched."
   (link-hint--find-property property (point) end-bound))
@@ -309,7 +293,7 @@ searched."
 ;; TODO get rid of code duplication here
 (defun link-hint--find-property-with-value
     (property value &optional start-bound end-bound)
-  "Find visible location where PROPERTY exists.
+  "Find location where PROPERTY exists.
 Only the range from between just after the START-BOUND and the END-BOUND will be
 searched."
   (save-excursion
@@ -318,24 +302,17 @@ searched."
           first-pos-without-prop
           first-pos-with-prop)
       (goto-char start-bound)
-      (while
-          (progn
-            (setq first-pos-without-prop nil
-                  first-pos-with-prop nil)
-            (setq first-pos-without-prop
-                  (text-property-not-all (point) end-bound property value))
-            (when first-pos-without-prop
-              (goto-char first-pos-without-prop)
-              (setq first-pos-with-prop
-                    (text-property-any (point) end-bound property value)))
-            (and first-pos-with-prop
-                 (invisible-p first-pos-with-prop)))
-        (goto-char first-pos-with-prop))
+      (setq first-pos-without-prop
+            (text-property-not-all (point) end-bound property value))
+      (when first-pos-without-prop
+        (goto-char first-pos-without-prop)
+        (setq first-pos-with-prop
+              (text-property-any (point) end-bound property value)))
       (when first-pos-with-prop
         first-pos-with-prop))))
 
 (defun link-hint--next-property-with-value (property value &optional end-bound)
-  "Find the first visible location where PROPERTY has VALUE.
+  "Find the first location where PROPERTY has VALUE.
 Only the range from between just after the point and the END-BOUND will be
 searched. When VALUE is not found, nil will be returned."
   (link-hint--find-property-with-value property value (point) end-bound))
@@ -357,7 +334,7 @@ searched. When VALUE is not found, nil will be returned."
 
 ;; TODO: reduce redundancy here
 (defun link-hint--next-link-pos (&optional end-bound)
-  "Find the closest visible link of all types that are not ignored.
+  "Find the closest link of all types that are not ignored.
 Only the range between just after the point and END-BOUND will be searched."
   (let* ((end-bound (or end-bound (window-end)))
          (text-url-pos (when (and (link-hint--not-ignored-p 'text-url)
@@ -438,6 +415,39 @@ Only the range between just after the point and END-BOUND will be searched."
                                 other-button-link-pos))))
     (when closest-pos
       closest-pos)))
+
+(defun link-hint--collect (start-bound end-bound get-next-link)
+  "Collect all links between START-BOUND and END-BOUND.
+GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
+  (save-excursion
+    (goto-char start-bound)
+    (let ((current-window (get-buffer-window))
+          (link-pos (funcall get-next-link end-bound))
+          link-positions)
+      ;; as all "next-" functions are designed to look after the point,
+      ;; check if there is a link at the point the first time in order
+      ;; to catch links that are at the start bound
+      ;; as the eol of an invisible line can be visible in org buffers,
+      ;; don't do this if the point is at the eol
+      (when (and (not (looking-at (rx eol)))
+                 (link-hint--link-at-point-p))
+        (push (cons (point) current-window) link-positions))
+      (while link-pos
+        (push (cons link-pos current-window) link-positions)
+        (goto-char link-pos)
+        (setq link-pos (funcall get-next-link end-bound)))
+      (nreverse link-positions))))
+
+(defun link-hint--collect-visible-links ()
+  "Collect all visible links."
+  (let (link-positions)
+    (dolist (pair (avy--find-visible-regions (window-start) (window-end)))
+      
+      (setq link-positions
+            (append link-positions
+                    (link-hint--collect (car pair) (cdr pair)
+                                        #'link-hint--next-link-pos))))
+    link-positions))
 
 ;;; Commands for Operating on a Link at the Point
 (defmacro link-hint--types-at-point-let-wrapper (body)
@@ -537,24 +547,12 @@ will be returned instead of calling avy then ACTION."
         (avy-background link-hint-avy-background)
         (avy-ignored-modes link-hint-ignored-modes)
         (avy-keys link-hint-avy-keys)
+        ;; prevent window from shifting avy overlays out of view
+        (scroll-margin 0)
         link-positions)
     (avy-dowindows current-prefix-arg
-      (save-excursion
-        (goto-char (window-start))
-        (let* ((end-bound (window-end))
-               ;; as all "next-" functions are designed to look after the point,
-               ;; check if there is a link at the point the first time in order
-               ;; to catch links that are at the beginning of the window/buffer
-               (current-link (if (link-hint--link-at-point-p)
-                                 (point)
-                               (link-hint--next-link-pos end-bound)))
-               (current-window (get-buffer-window))
-               ;; prevent window from shifting avy overlays out of view
-               (scroll-margin 0))
-          (while current-link
-            (push (cons current-link current-window) link-positions)
-            (goto-char current-link)
-            (setq current-link (link-hint--next-link-pos end-bound))))))
+      (setq link-positions
+            (append link-positions (link-hint--collect-visible-links))))
     (when (and link-positions
                (if require-multiple-links
                    (> (length link-positions) 1)
@@ -567,7 +565,7 @@ will be returned instead of calling avy then ACTION."
         ;; (save-selected-window..)
         (save-excursion
           (cond ((> (length link-positions) 1)
-                 (avy--process (nreverse link-positions)
+                 (avy--process link-positions
                                (avy--style-fn link-hint-avy-style)))
                 (t
                  (select-window (cdar link-positions))
