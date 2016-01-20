@@ -116,7 +116,7 @@ Defaults to `avy-ignored-modes'.")
   '(text-url
     file-link
     shr-url
-    htmlize-url
+    org-link
     mu4e-url
     mu4e-mailto
     mu4e-attachment
@@ -136,7 +136,7 @@ Defaults to `avy-ignored-modes'.")
           (const :tag "Text url" text-url)
           (const :tag "File link openable with ffap" file-link)
           (const :tag "Simple HTML Renderer url" shr-url)
-          (const :tag "Htmlize (org mode) url" htmlize-url)
+          (const :tag "Org mode links" org-link)
           (const :tag "Mu4e url" mu4e-url)
           (const :tag "Mu4e mailto address" mu4e-mailto)
           (const :tag "Mu4e attachment" mu4e-attachment)
@@ -345,8 +345,8 @@ Only the range between just after the point and END-BOUND will be searched."
                           (link-hint--next-file-link end-bound)))
          (shr-url-pos (when (link-hint--not-ignored-p 'shr-url)
                         (link-hint--next-property 'shr-url end-bound)))
-         (htmlize-url-pos (when (link-hint--not-ignored-p 'htmlize-url)
-                            (link-hint--next-property 'htmlize-link end-bound)))
+         (org-link-pos (when (link-hint--not-ignored-p 'org-link)
+                         (link-hint--next-property 'htmlize-link end-bound)))
          (mu4e-link-pos (link-hint--next-property 'mu4e-url end-bound))
          (mu4e-link-text (when mu4e-link-pos
                            (plist-get (text-properties-at mu4e-link-pos) 'mu4e-url)))
@@ -400,7 +400,7 @@ Only the range between just after the point and END-BOUND will be searched."
           (link-hint--min (list text-url-pos
                                 file-link-pos
                                 shr-url-pos
-                                htmlize-url-pos
+                                org-link-pos
                                 mu4e-url-pos
                                 mu4e-mailto-pos
                                 mu4e-att-pos
@@ -454,7 +454,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
   "Wrap BODY in let statement that checks for supported types at the point."
   `(let* ((text-properties (text-properties-at (point)))
           (shr-url (plist-get text-properties 'shr-url))
-          (htmlize-url (plist-get text-properties 'htmlize-link))
+          (org-link (plist-get text-properties 'htmlize-link))
           (text-url (looking-at link-hint-url-regexp))
           (file-link (ffap-file-at-point))
           ;; will work for attachments in addition to mail-tos and urls
@@ -483,7 +483,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
 (defun link-hint--link-at-point-p ()
   (link-hint--types-at-point-let-wrapper
    (when (or shr-url
-             htmlize-url
+             org-link
              text-url
              file-link
              mu4e-url
@@ -503,7 +503,12 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
   (interactive)
   (link-hint--types-at-point-let-wrapper
    (cond (shr-url (browse-url shr-url))
-         (htmlize-url (org-open-at-point))
+         ;; org-open-at-point won't work e.g. for =http://address.com= even
+         ;; though (org-next-link) will jump to it
+         (org-link (condition-case err
+                       (org-open-at-point)
+                     ('error (org-open-link-from-string
+                              (plist-get org-link :uri)))))
          (text-url (browse-url-at-point))
          ;; distinguish between opening in browser and view-atachment?
          (mu4e-url (mu4e~view-browse-url-from-binding))
@@ -527,7 +532,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
   (interactive)
   (link-hint--types-at-point-let-wrapper
    (cond (shr-url (kill-new shr-url))
-         (htmlize-url (kill-new (cadr htmlize-url)))
+         (org-link (kill-new (plist-get htmlize-link :uri)))
          (text-url (let ((url (url-get-url-at-point)))
                      (when url (kill-new url))))
          (file-link (kill-new (ffap-file-at-point)))
