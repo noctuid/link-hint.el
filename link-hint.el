@@ -561,7 +561,7 @@ will be returned instead of calling avy then ACTION."
                  t))
       (if get-links
           link-positions
-        (save-window-excursion
+        (save-selected-window
           (save-excursion
             (cond ((> (length link-positions) 1)
                    (avy--process (nreverse link-positions)
