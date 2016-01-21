@@ -16,6 +16,7 @@ Currently the following types of links are supported:
 - Info mode links
 - Package menu links (further description, install buttons, and keyword buttons)
 - Compilation mode links
+- W3m links (urls, email addresses, etc.)
 - Other button links (e.g. WoMan links)
 
 Feel free to request support for any useful link type I may have missed. Also, if you think it would be beneficial to have a more specific link type split from a more generic link type, feel free to make an issue. For example, there may be some specific type of button you want to ignore or use in a custom command without affecting other buttons.
