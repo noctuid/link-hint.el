@@ -447,11 +447,45 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
         (setq link-pos (funcall get-next-link end-bound)))
       (nreverse link-positions))))
 
+;; WORKAROUND for avy--find-visible-regions sometimes excluding visible ranges
+;; (which may be org's fault)
+;; (defun avy--next-invisible-point ()
+;;   "Return the next closest point with 'invisible property."
+;;   (let ((s (point)))
+;;     (while (and (not (= (point-max) (setq s (next-overlay-change s))))
+;;                 (let ((invisible-property (get-char-property s 'invisible)))
+;;                   (or (not invisible-property)
+;;                       (equal invisible-property 'org-link)))))
+;;     s))
+
+;; other way
+;; modified version of avy--find-visible-regions
+(defun link-hint--find-visible-regions (rbeg rend)
+  "Return a list of all visible regions between RBEG and REND."
+  (setq rbeg (max rbeg (point-min)))
+  (setq rend (min rend (point-max)))
+  (when (< rbeg rend)
+    (let (visibles beg)
+      (save-excursion
+        (save-restriction
+          (narrow-to-region rbeg rend)
+          (setq beg (goto-char (point-min)))
+          (while (not (= (point) (point-max)))
+            (goto-char (or (link-hint--next-property 'invisible)
+                           (point-max)))
+            (push (cons beg (point)) visibles)
+            (setq beg (goto-char
+                       (or (next-single-property-change
+                            (point)
+                            'invisible)
+                           (point-max)))))
+          (nreverse visibles))))))
+
 (defun link-hint--collect-visible-links ()
   "Collect all visible links."
   (let (link-positions)
-    (dolist (pair (avy--find-visible-regions (window-start) (window-end)))
-      
+    (dolist (pair (link-hint--find-visible-regions
+                   (window-start) (window-end)))
       (setq link-positions
             (append link-positions
                     (link-hint--collect (car pair) (cdr pair)
