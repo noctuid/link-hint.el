@@ -126,6 +126,7 @@ Defaults to `avy-ignored-modes'.")
     package-keyword-link
     package-install-link
     compilation-link
+    w3m-link
     woman-button-link
     other-button-link)
   "List containing all suported link types.")
@@ -146,6 +147,7 @@ Defaults to `avy-ignored-modes'.")
           (const :tag "Package.el keyword buttons" package-keyword-link)
           (const :tag "Package.el install buttons" package-install-link)
           (const :tag "Compilation mode link" compilation-link)
+          (const :tag "W3M link" w3m-link)
           (const :tag "WoMan button link" woman-button-link)
           (const :tag "Other button link" other-button-link)))
 
@@ -174,6 +176,7 @@ It defaults to the unsupported types.")
     help-link
     info-link
     compilation-link
+    w3m-link
     woman-button-link
     other-button-link)
   "Types of links to ignore with commands that act on multiple visible links.
@@ -189,6 +192,7 @@ Thes commands are `link-hint-open-multiple-links' and
     help-link
     info-link
     compilation-link
+    w3m-link
     woman-button-link
     other-button-link)
   "Types of links to ignore with commands that act on all visible links.
@@ -387,6 +391,10 @@ Only the range between just after the point and END-BOUND will be searched."
          (compilation-link-pos
           (when (link-hint--not-ignored-p 'compilation-link)
             (link-hint--next-property 'compilation-message end-bound)))
+         (w3m-link-pos
+          (when (link-hint--not-ignored-p 'w3m-link)
+            ;; alternatively could use w3m-goto-next-link
+            (link-hint--next-property 'w3m-href-anchor)))
          (woman-button-link-pos
           ;; next-single-char-property-change is slow but is necessary for
           ;; see also buttons in woman mode
@@ -411,6 +419,7 @@ Only the range between just after the point and END-BOUND will be searched."
                                 package-keyword-link-pos
                                 package-install-link-pos
                                 compilation-link-pos
+                                w3m-link-pos
                                 woman-button-link-pos
                                 other-button-link-pos))))
     (when closest-pos
@@ -476,6 +485,8 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
                   'package-install-button-action))
           (compilation-link
            (plist-get text-properties 'compilation-message))
+          (w3m-link
+           (plist-get text-properties 'w3m-href-anchor))
           (other-button-link (button-at (point))))
      ,body))
 
@@ -494,6 +505,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
              package-keyword-link
              package-install-link
              compilation-link
+             w3m-link
              other-button-link)
      t)))
 
@@ -520,6 +532,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
          (info-link (Info-follow-nearest-node))
          (package-description-link (package-menu-describe-package))
          (compilation-link (compile-goto-error))
+         (w3m-link (w3m-view-this-url))
          ;; lowest precedence
          (other-button-link (push-button))
          (file-link (find-file-at-point (ffap-file-at-point)))
@@ -547,7 +560,8 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
 When REQUIRE-MULTIPLE-LINKS is non-nil, this function will return nil if there
 is only one visible link. When GET-LINKS is non-nil, the list of visible links
 will be returned instead of calling avy then ACTION."
-  (let ((avy-all-windows link-hint-avy-all-windows)
+  (let ((saved-pos (point))
+        (avy-all-windows link-hint-avy-all-windows)
         (avy-all-windows-alt link-hint-avy-all-windows-alt)
         (avy-background link-hint-avy-background)
         (avy-ignored-modes link-hint-ignored-modes)
@@ -568,14 +582,16 @@ will be returned instead of calling avy then ACTION."
         ;; shouldn't do this for links that open new windows
         ;; (especially if those windows disappear on losing focus)
         ;; (save-selected-window..)
-        (save-excursion
-          (cond ((> (length link-positions) 1)
-                 (avy--process link-positions
-                               (avy--style-fn link-hint-avy-style)))
-                (t
-                 (select-window (cdar link-positions))
-                 (goto-char (caar link-positions))))
-          (funcall action))))))
+        ;; save-excursion
+        (cond ((> (length link-positions) 1)
+               (avy--process link-positions
+                             (avy--style-fn link-hint-avy-style)))
+              (t
+               (select-window (cdar link-positions))
+               (goto-char (caar link-positions))))
+        (funcall action)
+        (unless (equal major-mode 'w3m-mode)
+          (goto-char saved-pos))))))
 
 ;;;###autoload
 (defun link-hint-open-link ()
