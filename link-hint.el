@@ -127,6 +127,7 @@ Defaults to `avy-ignored-modes'.")
     package-install-link
     compilation-link
     w3m-link
+    customize-link
     woman-button-link
     other-button-link)
   "List containing all suported link types.")
@@ -148,6 +149,7 @@ Defaults to `avy-ignored-modes'.")
           (const :tag "Package.el install buttons" package-install-link)
           (const :tag "Compilation mode link" compilation-link)
           (const :tag "W3M link" w3m-link)
+          (const :tag "Customize link" customize-link)
           (const :tag "WoMan button link" woman-button-link)
           (const :tag "Other button link" other-button-link)))
 
@@ -164,6 +166,7 @@ Defaults to `avy-ignored-modes'.")
     package-keyword-link
     package-install-link
     compilation-link
+    customize-link
     woman-button-link
     other-button-link)
   "Link types that the copy action will ignore.
@@ -177,6 +180,7 @@ It defaults to the unsupported types.")
     info-link
     compilation-link
     w3m-link
+    customize-link
     woman-button-link
     other-button-link)
   "Types of links to ignore with commands that act on multiple visible links.
@@ -192,6 +196,7 @@ Thes commands are `link-hint-open-multiple-links' and
     help-link
     info-link
     compilation-link
+    customize-link
     w3m-link
     woman-button-link
     other-button-link)
@@ -268,6 +273,18 @@ searched."
   "Find the next button location.
 Only the range between just after the point and END-BOUND will be searched."
   (link-hint--find-button (point) end-bound))
+
+(defun link-hint--next-widget (&optional end-bound)
+  "Find the next widget location. Currently only used for custom mode.
+Only the range between just after the point and END-BOUND will be searched."
+  (setq end-bound (or end-bound (window-end)))
+  (save-excursion
+    (save-restriction
+      (narrow-to-region (point) end-bound)
+      (condition-case err
+          (progn (widget-forward 1)
+                 (point))
+        ('error nil)))))
 
 (defun link-hint--find-property (property &optional start-bound end-bound)
   "Find location where PROPERTY exists.
@@ -401,6 +418,9 @@ Only the range between just after the point and END-BOUND will be searched."
           (when (and (equal major-mode 'woman-mode)
                      (link-hint--not-ignored-p 'woman-button-link))
             (link-hint--next-button end-bound)))
+         (customize-link-pos
+          (when (link-hint--not-ignored-p 'customize-link)
+            (link-hint--next-widget end-bound)))
          (other-button-link-pos
           (when (link-hint--not-ignored-p 'other-button-link)
             (link-hint--next-property 'button end-bound)))
@@ -421,6 +441,7 @@ Only the range between just after the point and END-BOUND will be searched."
                                 compilation-link-pos
                                 w3m-link-pos
                                 woman-button-link-pos
+                                customize-link-pos
                                 other-button-link-pos))))
     (when closest-pos
       closest-pos)))
@@ -521,6 +542,8 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
            (plist-get text-properties 'compilation-message))
           (w3m-link
            (plist-get text-properties 'w3m-href-anchor))
+          (customize-link (and (equal major-mode 'Custom-mode)
+                               (button-at (point))))
           (other-button-link (button-at (point))))
      ,body))
 
@@ -540,6 +563,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
              package-install-link
              compilation-link
              w3m-link
+             customize-link
              other-button-link)
      t)))
 
@@ -567,6 +591,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
          (package-description-link (package-menu-describe-package))
          (compilation-link (compile-goto-error))
          (w3m-link (w3m-view-this-url))
+         (customize-link (Custom-newline (point)))
          ;; lowest precedence
          (other-button-link (push-button))
          (file-link (find-file-at-point (ffap-file-at-point)))
