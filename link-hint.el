@@ -620,6 +620,7 @@ When REQUIRE-MULTIPLE-LINKS is non-nil, this function will return nil if there
 is only one visible link. When GET-LINKS is non-nil, the list of visible links
 will be returned instead of calling avy then ACTION."
   (let ((saved-pos (point))
+        (saved-win (get-buffer-window))
         (avy-all-windows link-hint-avy-all-windows)
         (avy-all-windows-alt link-hint-avy-all-windows-alt)
         (avy-background link-hint-avy-background)
@@ -650,7 +651,8 @@ will be returned instead of calling avy then ACTION."
                (goto-char (caar link-positions))))
         (funcall action)
         (unless (equal major-mode 'w3m-mode)
-          (goto-char saved-pos))))))
+          (with-selected-window saved-win
+            (goto-char saved-pos)))))))
 
 ;;;###autoload
 (defun link-hint-open-link ()
