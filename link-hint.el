@@ -206,6 +206,11 @@ These commands are `link-hint-open-all-links' and
   :group 'link-hint
   :type 'link-hint-link-type-set)
 
+(defcustom link-hint-message t
+  "Whether to message information for commands."
+  :group 'link-hint
+  :type 'boolean)
+
 ;;; Link Finding Helper Functions
 (defun link-hint--find-regexp (search-regexp &optional start-bound end-bound)
   "Find the first occurrence of SEARCH-REGEXP.
@@ -632,27 +637,36 @@ will be returned instead of calling avy then ACTION."
     (avy-dowindows current-prefix-arg
       (setq link-positions
             (append link-positions (link-hint--collect-visible-links))))
-    (when (and link-positions
-               (if require-multiple-links
-                   (> (length link-positions) 1)
-                 t))
-      (if get-links
-          link-positions
-        ;; FIXME: should this be user configurable?
-        ;; shouldn't do this for links that open new windows
-        ;; (especially if those windows disappear on losing focus)
-        ;; (save-selected-window..)
-        ;; save-excursion
-        (cond ((> (length link-positions) 1)
-               (avy--process link-positions
-                             (avy--style-fn link-hint-avy-style)))
-              (t
-               (select-window (cdar link-positions))
-               (goto-char (caar link-positions))))
-        (funcall action)
-        (unless (equal major-mode 'w3m-mode)
-          (with-selected-window saved-win
-            (goto-char saved-pos)))))))
+    (cond ((not link-positions)
+           (when link-hint-message
+             (message "No links found.")))
+          ((and require-multiple-links
+                (not (cdr link-positions)))
+           (when link-hint-message
+             (message "Only one link found. Multiple links required.")))
+          (t
+           (if get-links
+               link-positions
+             ;; FIXME: should this be user configurable?
+             ;; shouldn't do this for links that open new windows
+             ;; (especially if those windows disappear on losing focus)
+             ;; (save-selected-window..)
+             ;; save-excursion
+             (cond ((> (length link-positions) 1)
+                    (avy--process link-positions
+                                  (avy--style-fn link-hint-avy-style)))
+                   (t
+                    (select-window (cdar link-positions))
+                    (goto-char (caar link-positions))))
+             (let ((response (funcall action)))
+               ;; (eq (funcall action) 'no-restore-position)
+               (unless (equal major-mode 'w3m-mode)
+                 (with-selected-window saved-win
+                   (goto-char saved-pos)))
+               (when (and link-hint-message
+                          (not require-multiple-links))
+                 (message "Called `%s' on a link." action))
+               response))))))
 
 ;;;###autoload
 (defun link-hint-open-link ()
@@ -687,10 +701,14 @@ This function will not do anything if only one link is visible."
                  (ignore-errors
                    (link-hint--link-action #'point t)))
       (push current-point point-list))
-    (save-excursion
-      (dolist (point (nreverse point-list))
-        (goto-char point)
-        (funcall action)))))
+    (when point-list
+      (let ((num-links (length point-list)))
+        (save-excursion
+          (dolist (point (nreverse point-list))
+            (goto-char point)
+            (funcall action)))
+        (when link-hint-message
+          (message "Called `%s' on %d links." action num-links))))))
 
 ;;;###autoload
 (defun link-hint-open-multiple-links ()
@@ -718,11 +736,14 @@ The point will be returned to its previous location afterwards."
   (let* ((link-hint-ignore-types
           (append link-hint-ignore-types
                   link-hint-act-on-all-ignore-types))
-         (point-list (link-hint--link-action nil nil t)))
+         (point-list (link-hint--link-action nil nil t))
+         (num-links (length point-list)))
     (save-excursion
       (dolist (point (nreverse point-list))
         (goto-char (car point))
-        (funcall action)))))
+        (funcall action)))
+    (when link-hint-message
+      (message "Called `%s' on %d links." action num-links))))
 
 ;;;###autoload
 (defun link-hint-open-all-links ()
