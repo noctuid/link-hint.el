@@ -3,7 +3,7 @@
 ;; Author: Fox Kiester <noct@openmailbox.org>
 ;; URL: https://github.com/noctuid/link-hint.el
 ;; Keywords: url
-;; Package-Requires: ((avy "0.3.0") (emacs "24.1"))
+;; Package-Requires: ((avy "0.3.0") (emacs "24.1") (cl-lib "0.5"))
 ;; Version: 0.1
 
 ;; This file is not part of GNU Emacs.
@@ -524,7 +524,8 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
   `(let* ((text-properties (text-properties-at (point)))
           (shr-url (plist-get text-properties 'shr-url))
           (org-link (plist-get text-properties 'htmlize-link))
-          (text-url (looking-at link-hint-url-regexp))
+          (text-url (when (looking-at link-hint-url-regexp)
+                      (url-get-url-at-point)))
           (file-link (ffap-file-at-point))
           ;; will work for attachments in addition to mail-tos and urls
           (mu4e-url (plist-get text-properties 'mu4e-url))
@@ -547,7 +548,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
            (plist-get text-properties 'compilation-message))
           (w3m-link
            (plist-get text-properties 'w3m-href-anchor))
-          (customize-link (and (equal major-mode 'Custom-mode)
+          (customize-link (and (eq major-mode 'Custom-mode)
                                (button-at (point))))
           (other-button-link (button-at (point))))
      ,body))
@@ -576,46 +577,82 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
 (defun link-hint-open-link-at-point ()
   "Open a link of any supported type at the point."
   (interactive)
-  (link-hint--types-at-point-let-wrapper
-   (cond (shr-url (browse-url shr-url))
-         ;; org-open-at-point won't work e.g. for =http://address.com= even
-         ;; though (org-next-link) will jump to it
-         (org-link (condition-case err
-                       (org-open-at-point)
-                     ('error (org-open-link-from-string
-                              (plist-get org-link :uri)))))
-         (text-url (browse-url-at-point))
-         ;; distinguish between opening in browser and view-atachment?
-         (mu4e-url (mu4e~view-browse-url-from-binding))
-         (mu4e-att (mu4e-view-open-attachment nil mu4e-att))
-         ((or help-link
-              package-keyword-link
-              package-install-link)
-          (push-button))
-         (info-link (Info-follow-nearest-node))
-         (package-description-link (package-menu-describe-package))
-         (compilation-link (compile-goto-error))
-         (w3m-link (w3m-view-this-url))
-         (customize-link (Custom-newline (point)))
-         ;; lowest precedence
-         (other-button-link (push-button))
-         (file-link (find-file-at-point (ffap-file-at-point)))
-         (t (message "There is no supported link at the point.")))))
+  (let (no-restore-position
+        link-text)
+    (setq
+     link-text
+     (link-hint--types-at-point-let-wrapper
+      (cond (shr-url (browse-url shr-url)
+                     shr-url)
+            ;; org-open-at-point won't work e.g. for =http://address.com= even
+            ;; though (org-next-link) will jump to it
+            (org-link
+             (let ((uri (plist-get org-link :uri)))
+               (condition-case err
+                   (org-open-at-point)
+                 ('error (org-open-link-from-string
+                          uri)))
+               ;; all external links have a colon except for file:
+               ;; other than file links, links without a colon refer to
+               ;; headings in the same file (the point should not be restored)
+               (unless (and (string-match
+                             (rx (or (and bol (or "/" "./" "~/"))
+                                     (and (0+ anything) ":" (0+ anything))))
+                             uri)
+                            (not (string-match (rx bol "id:") uri)))
+                 (setq no-restore-position t))
+               uri))
+            (text-url (browse-url text-url)
+                      text-url)
+            ;; distinguish between opening in browser and view-atachment?
+            (mu4e-url (mu4e~view-browse-url-from-binding)
+                      mu4e-url)
+            (mu4e-att (mu4e-view-open-attachment nil mu4e-att)
+                      nil)
+            ((or help-link
+                 package-keyword-link
+                 package-install-link)
+             (push-button)
+             nil)
+            (info-link (Info-follow-nearest-node)
+                       nil)
+            (package-description-link (package-menu-describe-package)
+                                      nil)
+            (compilation-link (compile-goto-error)
+                              nil)
+            (w3m-link (w3m-view-this-url)
+                      (setq no-restore-position t)
+                      ;; TODO: actually get the url
+                      nil)
+            (customize-link (Custom-newline (point))
+                            nil)
+            ;; lowest precedence
+            (other-button-link (push-button)
+                               nil)
+            (file-link (find-file-at-point file-link)
+                       file-link)
+            ;; TODO maybe make this an error
+            (t (message "There is no supported link at the point.")))))
+    (list no-restore-position "Opened" link-text)))
 
 ;;;###autoload
 (defun link-hint-copy-link-at-point ()
-  "Copy a link of any supported type at the point. See the default value of
-`link-hint-copy-ignore-types' for the unsupported types."
+  "Copy a link of any supported type at the point.
+See the default value of `link-hint-copy-ignore-types' for the unsupported
+types."
   (interactive)
-  (link-hint--types-at-point-let-wrapper
-   (cond (shr-url (kill-new shr-url))
-         (org-link (kill-new (plist-get htmlize-link :uri)))
-         (text-url (let ((url (url-get-url-at-point)))
-                     (when url (kill-new url))))
-         (file-link (kill-new (ffap-file-at-point)))
-         (mu4e-url (kill-new mu4e-url))
-         (mu4e-att (mu4e-view-save-attachment-single nil mu4e-att))
-         (t (message "There is no supported link at the point.")))))
+  (list
+   nil
+   "Copied"
+   (link-hint--types-at-point-let-wrapper
+    (cond (shr-url (kill-new shr-url))
+          (org-link (kill-new (plist-get org-link :uri)))
+          (text-url (kill-new text-url))
+          (file-link (kill-new (ffap-file-at-point)))
+          (mu4e-url (kill-new mu4e-url))
+          (mu4e-att (mu4e-view-save-attachment-single nil mu4e-att)
+                    nil)
+          (t (message "There is no supported link at the point."))))))
 
 ;;; Avy Commands
 (defun link-hint--link-action
@@ -658,15 +695,26 @@ will be returned instead of calling avy then ACTION."
                    (t
                     (select-window (cdar link-positions))
                     (goto-char (caar link-positions))))
-             (let ((response (funcall action)))
-               ;; (eq (funcall action) 'no-restore-position)
-               (unless (equal major-mode 'w3m-mode)
+             (let* ((values (funcall action))
+                    (no-restore-position (when (consp values)
+                                           (car values)))
+                    (action-message (when (consp values)
+                                      (cadr values)))
+                    ;; only non-nil for copyable links
+                    (link-text (when (consp values)
+                                 (caddr values))))
+               (unless no-restore-position
                  (with-selected-window saved-win
                    (goto-char saved-pos)))
                (when (and link-hint-message
                           (not require-multiple-links))
-                 (message "Called `%s' on a link." action))
-               response))))))
+                 (message "%s %s"
+                          (or action-message
+                              (format "Called `%s' on" action))
+                          (or (concat link-text ".")
+                              "a link.")))
+               ;; for multiple-link-action, as action is #'point
+               values))))))
 
 ;;;###autoload
 (defun link-hint-open-link ()
@@ -696,19 +744,24 @@ This function will not do anything if only one link is visible."
          (append link-hint-ignore-types
                  link-hint-act-on-multiple-ignore-types))
         current-point
-        point-list)
+        point-list
+        (num-links 0)
+        action-message)
     (while (setq current-point
                  (ignore-errors
                    (link-hint--link-action #'point t)))
       (push current-point point-list))
     (when point-list
-      (let ((num-links (length point-list)))
-        (save-excursion
-          (dolist (point (nreverse point-list))
-            (goto-char point)
-            (funcall action)))
-        (when link-hint-message
-          (message "Called `%s' on %d links." action num-links))))))
+      (save-excursion
+        (dolist (point (nreverse point-list))
+          (goto-char point)
+          (let (link-hint-message)
+            (setq action-message (cadr (funcall action))))
+          (cl-incf num-links)))
+      (when link-hint-message
+        (message "%s %d links."
+                 (or action-message (format "Called `%s' on" action))
+                 num-links)))))
 
 ;;;###autoload
 (defun link-hint-open-multiple-links ()
@@ -737,13 +790,18 @@ The point will be returned to its previous location afterwards."
           (append link-hint-ignore-types
                   link-hint-act-on-all-ignore-types))
          (point-list (link-hint--link-action nil nil t))
-         (num-links (length point-list)))
+         (num-links 0)
+         action-message)
     (save-excursion
       (dolist (point (nreverse point-list))
         (goto-char (car point))
-        (funcall action)))
+        (let (link-hint-message)
+          (setq action-message (cadr (funcall action))))
+        (cl-incf num-links)))
     (when link-hint-message
-      (message "Called `%s' on %d links." action num-links))))
+      (message "%s %d links."
+               (or action-message (format "Called `%s' on" action))
+               num-links))))
 
 ;;;###autoload
 (defun link-hint-open-all-links ()

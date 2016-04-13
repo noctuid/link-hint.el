@@ -109,7 +109,7 @@ The user can create new commands to do something other than copy or open a link 
 Here is an example of a command that downloads a text url, ignoring other link types. As [[https://github.com/zk-phi/download-region][download-region]] does not have functions for downloading a url passed in as a string or the url under the point, the resulting command is somewhat convoluted.
 #+begin_src emacs-lisp
 (defun link-hint-download-link ()
-  "Use avy to select and download a text URL with download.region.el."
+  "Use avy to select and download a text URL with download-region.el."
   (interactive)
   (let ((link-hint-ignore-types
          (remove 'text-url link-hint-all-types)))
@@ -117,7 +117,15 @@ Here is an example of a command that downloads a text url, ignoring other link t
      (lambda ()
        (set-mark (cdr (thing-at-point-bounds-of-url-at-point)))
        (download-region-as-url)
-       (keyboard-quit)))))
+       (keyboard-quit)
+       ;;  the function link-action calls can optionally return a list
+       (list
+        ;; when true, don't restore the point
+        ;; useful if the action is meant to move within the current buffer
+        nil
+        ;; text to message to the user
+        "Downloaded"
+        (url-get-url-at-point))))))
 #+end_src
 
 For reference, this is what ~link-hint-open-link~ looks like:
