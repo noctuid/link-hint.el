@@ -135,3 +135,15 @@ For reference, this is what ~link-hint-open-link~ looks like:
   (interactive)
   (link-hint--link-action #'link-hint-open-link-at-point))
 #+end_src
+** Using for Links in Terminal with Tmux
+This may seem like a strange use for this package, but I've been doing this due to lack of a better alternative. Unfortunately, most of the methods for generically opening urls in a terminal running tmux (e.g. urlscan, urlview, w3m, terminal keybindings, tmux-urlview, and tmux-open) aren't very quick or customizable. [[https://github.com/tmux/tmux][tmux-fingers]] looks more promising but currently only supports copying, doesn't allow for customizable hint keys, and is slow for me.
+
+I've started using this keybinding on the rare occasion that I need to open a url from somewhere other than emacs:
+#+begin_src shell
+bind-key f capture-pane \; save-buffer /tmp/tmux-buffer \; \
+	new-window 'emacsclient -t -e "(find-file \"/tmp/tmux-buffer\")" -e "(goto-address-mode)" -e "(link-hint-open-link)" -e "(kill-this-buffer)" -e "(delete-frame)"'
+#+end_src
+
+I kill the buffer to ensure that emacs won't prompt to revert the file on later invocations in the case that auto-revert-mode is off.
+
+One downside (shared by most other methods) is that it may be a bit disorienting to have the positions of links moved when opening a new tmux window. In this regard, having link-opening functionality directly in a terminal is nice.
