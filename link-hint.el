@@ -36,6 +36,7 @@
 ;; For more information see the README in the github repo.
 
 ;;; Code:
+(require 'cl-lib)
 (require 'avy)
 (require 'url-util)
 (require 'browse-url)
@@ -655,7 +656,7 @@ types."
           (t (message "There is no supported link at the point."))))))
 
 ;;; Avy Commands
-(defun link-hint--link-action
+(cl-defun link-hint--link-action
     (action &optional require-multiple-links get-links)
   "Jump to a url using avy and execute ACTION.
 When REQUIRE-MULTIPLE-LINKS is non-nil, this function will return nil if there
@@ -689,9 +690,14 @@ will be returned instead of calling avy then ACTION."
              ;; (especially if those windows disappear on losing focus)
              ;; (save-selected-window..)
              ;; save-excursion
-             (cond ((> (length link-positions) 1)
-                    (avy--process link-positions
-                                  (avy--style-fn link-hint-avy-style)))
+             (cond ((cdr link-positions)
+                    (let ((avy-action #'goto-char))
+                      (unless
+                          (numberp
+                           (avy--process link-positions
+                                         (avy--style-fn link-hint-avy-style)))
+                        (message "Aborted link selection.")
+                        (cl-return-from link-hint--link-action))))
                    (t
                     (select-window (cdar link-positions))
                     (goto-char (caar link-positions))))
