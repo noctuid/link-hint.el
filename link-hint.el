@@ -677,11 +677,13 @@ will be returned instead of calling avy then ACTION."
             (append link-positions (link-hint--collect-visible-links))))
     (cond ((not link-positions)
            (when link-hint-message
-             (message "No links found.")))
+             (message "No links found."))
+           nil)
           ((and require-multiple-links
                 (not (cdr link-positions)))
            (when link-hint-message
-             (message "Only one link found. Multiple links required.")))
+             (message "Only one link found. Multiple links required."))
+           nil)
           (t
            (if get-links
                link-positions
