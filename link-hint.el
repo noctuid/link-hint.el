@@ -54,7 +54,9 @@
 (defcustom link-hint-url-regexp
   goto-address-url-regexp
   "Regexp used to determine what constitutes a text url.
-Defaults to `goto-address-url-regxp'."
+Defaults to `goto-address-url-regxp'. Note that this is used for text urls in
+modes that don't have some mechanism for supporting urls. This won't affect
+link-hint's behavior in `org-mode', for example."
   :group 'link-hint
   :type 'regexp)
 
@@ -525,8 +527,11 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
   `(let* ((text-properties (text-properties-at (point)))
           (shr-url (plist-get text-properties 'shr-url))
           (org-link (plist-get text-properties 'htmlize-link))
-          (text-url (when (looking-at link-hint-url-regexp)
-                      (url-get-url-at-point)))
+          (text-url
+           (let ((url (url-get-url-at-point)))
+             (and url
+                  (string-match link-hint-url-regexp url)
+                  (match-string 0 url))))
           (file-link (ffap-file-at-point))
           ;; will work for attachments in addition to mail-tos and urls
           (mu4e-url (plist-get text-properties 'mu4e-url))
@@ -557,22 +562,21 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
 ;; TODO consider having variables in let-wrapper cover everything in all-types
 (defun link-hint--link-at-point-p ()
   (link-hint--types-at-point-let-wrapper
-   (when (or shr-url
-             org-link
-             text-url
-             file-link
-             mu4e-url
-             mu4e-att
-             help-link
-             info-link
-             package-description-link
-             package-keyword-link
-             package-install-link
-             compilation-link
-             w3m-link
-             customize-link
-             other-button-link)
-     t)))
+   (or shr-url
+       org-link
+       text-url
+       file-link
+       mu4e-url
+       mu4e-att
+       help-link
+       info-link
+       package-description-link
+       package-keyword-link
+       package-install-link
+       compilation-link
+       w3m-link
+       customize-link
+       other-button-link)))
 
 ;;;###autoload
 (defun link-hint-open-link-at-point ()
