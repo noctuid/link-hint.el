@@ -28,9 +28,9 @@
 ;; open a link in the current buffer. A link can be a text, shr, mu4e or org
 ;; (htmlize) url. Mu4e attachments and mailto addresses, help mode links, and
 ;; info mode links are also considered to be links. The user can set
-;; `link-hint-ignore-types' to can change what is considered a link. Commands
+;; `link-hint-ignore-types' to change what is considered a link. Commands
 ;; are also provided for copying links to the kill ring (and optionally the
-;; clipboard and/or primary) and for opening multiple urls at once like with
+;; clipboard and/or primary) and for opening multiple urls at once like
 ;; pentadactyl's "g;".
 
 ;; For more information see the README in the github repo.
@@ -187,7 +187,7 @@ It defaults to the unsupported types.")
     woman-button-link
     other-button-link)
   "Types of links to ignore with commands that act on multiple visible links.
-Thes commands are `link-hint-open-multiple-links' and
+These commands are `link-hint-open-multiple-links' and
 `link-hint-copy-multiple-links'."
   :group 'link-hint
   :type 'link-hint-link-type-set)
@@ -463,8 +463,8 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
           (link-pos (funcall get-next-link end-bound))
           link-positions)
       ;; as all "next-" functions are designed to look after the point,
-      ;; check if there is a link at the point the first time in order
-      ;; to catch links that are at the start bound
+      ;; check if there is a link at the point the first time, in order
+      ;; to catch links that are at the start bound,
       ;; as the eol of an invisible line can be visible in org buffers,
       ;; don't do this if the point is at the eol
       (when (and (not (looking-at (rx eol)))
@@ -609,7 +609,7 @@ GET-NEXT-LINK will be repeatedly called with END-BOUND as an argument."
                uri))
             (text-url (browse-url text-url)
                       text-url)
-            ;; distinguish between opening in browser and view-atachment?
+            ;; distinguish between opening in browser and view-attachment?
             (mu4e-url (mu4e~view-browse-url-from-binding)
                       mu4e-url)
             (mu4e-att (mu4e-view-open-attachment nil mu4e-att)
