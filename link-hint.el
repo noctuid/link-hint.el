@@ -3,7 +3,7 @@
 ;; Author: Fox Kiester <noct@openmailbox.org>
 ;; URL: https://github.com/noctuid/link-hint.el
 ;; Keywords: convenience url avy link links hyperlink
-;; Package-Requires: ((avy "0.3.0") (emacs "24.1") (cl-lib "0.5"))
+;; Package-Requires: ((avy "0.4.0") (emacs "24.1") (cl-lib "0.5"))
 ;; Version: 0.1
 
 ;; This file is not part of GNU Emacs.
