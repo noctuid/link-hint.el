@@ -338,7 +338,8 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'file-link
   :next #'link-hint--next-file-link
   :at-point-p #'ffap-file-at-point
-  :not-vars '(org-mode)
+  ;; TODO consider making file links opt-in (use :vars)
+  :not-vars '(org-mode Info-mode)
   :open #'find-file-at-point
   :copy #'kill-new)
 
