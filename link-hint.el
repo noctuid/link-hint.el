@@ -130,7 +130,8 @@ See issue #15 for more information."
 Only search the range between just after START-BOUND and END-BOUND."
   (save-excursion
     (let ((start-bound (or start-bound (window-start)))
-          (end-bound (or end-bound (window-end))))
+          (end-bound (or end-bound (window-end)))
+          case-fold-search)
       (goto-char start-bound)
       (condition-case err
           (forward-char)
