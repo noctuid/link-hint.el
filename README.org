@@ -170,18 +170,9 @@ Here is an example of adding a command that downloads a url:
 (defun link-hint-download-link ()
   "Use avy to select and download a text URL with download-region.el."
   (interactive)
-  (link-hint--one :download))
+  (avy-with link-hint-download-link
+    (link-hint--one :download)))
 #+end_src
-This may not be all that useful (could alternatively just collect using a next url function)
-
-For reference, this is what ~link-hint-open-link~ looks like:
-#+begin_src emacs-lisp
-(defun link-hint-open-link ()
-  "Use avy to select and open a visible link."
-  (interactive)
-  (link-hint--link-action #'link-hint-open-link-at-point))
-#+end_src
-
 
 ** Using for Links in Terminal with Tmux
 This may seem like a strange use for this package, but I've been doing this due to lack of a better alternative. Unfortunately, most of the methods for generically opening urls in a terminal running tmux (e.g. urlscan, urlview, w3m, terminal keybindings, tmux-urlview, and tmux-open) aren't very quick or customizable. [[https://github.com/tmux/tmux][tmux-fingers]] looks more promising but currently only supports copying, doesn't allow for customizable hint keys, and is slow for me.

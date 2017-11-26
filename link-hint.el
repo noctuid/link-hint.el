@@ -927,38 +927,44 @@ If the point/window are not intentionally changed by the action, restore them."
 (defun link-hint-open-link ()
   "Use avy to open a visible link."
   (interactive)
-  (link-hint--one :open))
+  (avy-with link-hint-open-link
+    (link-hint--one :open)))
 
 ;;;###autoload
 (defun link-hint-copy-link ()
   "Copy a visible link of a supported type to the kill ring with avy.
 `select-enable-clipboard' and `select-enable-primary' can be set to non-nil
 values to copy the link to the clipboard and/or primary as well."  (interactive)
-  (link-hint--one :copy))
+  (avy-with link-hint-copy-link
+    (link-hint--one :copy)))
 
 ;;;###autoload
 (defun link-hint-open-multiple-links ()
   "Use avy to open multiple visible links at once."
   (interactive)
-  (link-hint--multiple :open))
+  (avy-with link-hint-open-multiple-links
+    (link-hint--multiple :open)))
 
 ;;;###autoload
 (defun link-hint-copy-multiple-links ()
   "Use avy to copy multiple visible links at once to the kill ring."
   (interactive)
-  (link-hint--multiple :copy))
+  (avy-with link-hint-copy-multiple-links
+    (link-hint--multiple :copy)))
 
 ;;;###autoload
 (defun link-hint-open-all-links ()
   "Open all visible links."
   (interactive)
-  (link-hint--all :open))
+  (avy-with link-hint-open-all-links
+    (link-hint--all :open)))
 
 ;;;###autoload
 (defun link-hint-copy-all-links ()
   "Copy all visible links."
   (interactive)
-  (link-hint--all :copy))
+  (avy-with link-hint-copy-all-links
+    (link-hint--all :copy)))
 
 ;; ** At Point Commands
 (defun link-hint--get-link-at-point ()
