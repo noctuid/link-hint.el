@@ -105,7 +105,7 @@ example."
 
 (defcustom link-hint-delete-trailing-paren t
   "Whether to delete a ) at the end of a url.
-This is a workaround for emacs libraries including unwanted parens in urls.
+This is a workaround for Emacs libraries including unwanted parens in urls.
 See issue #15 for more information."
   :group 'link-hint
   :type 'boolean)
@@ -133,9 +133,7 @@ Only search the range between just after START-BOUND and END-BOUND."
           (end-bound (or end-bound (window-end)))
           case-fold-search)
       (goto-char start-bound)
-      (condition-case err
-          (forward-char)
-        ('error nil))
+      (ignore-errors (forward-char))
       (when (re-search-forward search-regexp end-bound t)
         (match-beginning 0)))))
 
@@ -144,24 +142,7 @@ Only search the range between just after START-BOUND and END-BOUND."
 Only search the range between just after the point and BOUND."
   (link-hint--find-regexp search-regexp (point) bound))
 
-;; only using for woman since need `next-single-char-property-change' (slow)
-(defun link-hint--find-button (&optional start-bound end-bound)
-  "Find the first button location.
-Only search the range between just after START-BOUND and END-BOUND."
-  (let ((start-bound (or start-bound (window-start)))
-        (end-bound (or end-bound (window-end)))
-        button)
-    (save-restriction
-      (narrow-to-region start-bound end-bound)
-      (setq button (next-button (point)))
-      (when button
-        (button-start button)))))
-
-(defun link-hint--next-button (&optional bound)
-  "Find the next button location.
-Only search the range between just after the point and BOUND."
-  (link-hint--find-button (point) bound))
-
+(declare-function widget-forward "wid-edit")
 (defun link-hint--next-widget (&optional bound)
   "Find the next widget location. Currently only used for custom mode.
 Only search the range between just after the point and BOUND."
@@ -169,10 +150,9 @@ Only search the range between just after the point and BOUND."
   (save-excursion
     (save-restriction
       (narrow-to-region (point) bound)
-      (condition-case err
-          (progn (widget-forward 1)
-                 (point))
-        ('error nil)))))
+      (ignore-errors
+        (widget-forward 1)
+        (point)))))
 
 (defun link-hint--find-property-with-value
     (property value &optional start-bound end-bound)
@@ -238,7 +218,9 @@ Only search the range from between just after the point and BOUND."
 
 ;;;###autoload
 (defun link-hint-define-type (name &rest properties)
-  "Add a new type of link to link-hint.el."
+  "Add a new type of link called NAME to link-hint.el.
+PROPERTIES should be property value pairs to add to the symbol plist of
+link-hint-NAME."
   (declare (indent defun))
   (let ((type (link-hint- name)))
     (cl-loop for (prop value)
@@ -260,8 +242,8 @@ Only search the range from between just after the point and BOUND."
 (defun link-hint--type-valid-p (type)
   "Return whether TYPE is a valid type for the current buffer.
 This is done by checking that all its predicates hold, that at least one of its
-variables is bound and true or the current major-mode, and that none of its
-\"not\" variables are true (if bound) or the current major-mode."
+variables is bound and true or the current `major-mode', and that none of its
+\"not\" variables are true (if bound) or the current `major-mode'."
   (let ((predicates (get type :predicates))
         (vars (get type :vars))
         (not-vars (get type :not-vars)))
@@ -397,13 +379,15 @@ Only search the range between just after the point and BOUND."
   ;; note: org doesn't provide a property for the text in [[url][text]]
   (plist-get (get-text-property (point) 'htmlize-link) :uri))
 
+(declare-function org-open-at-point "org")
+(declare-function org-open-link-from-string "org")
 (defun link-hint--open-org-link (uri)
   "Open the org link URI."
   ;; org-open-at-point won't work e.g. for =http://address.com= even
   ;; though `org-next-link' will jump to it
-  (condition-case err
+  (condition-case nil
       (org-open-at-point)
-    ('error (org-open-link-from-string uri))))
+    (error (org-open-link-from-string uri))))
 
 (link-hint-define-type 'org-link
   :next #'link-hint--next-org-link
@@ -423,6 +407,7 @@ Only search the range between just after the point and BOUND."
   "Return the mu4e url at the point or nil."
   (get-text-property (point) 'mu4e-url))
 
+(declare-function mu4e~view-browse-url-from-binding "mu4e-view")
 (defun link-hint--open-mu4e-url (url)
   "Open the mu4e URL."
   ;; note: browse-url also supports mailto
@@ -446,13 +431,15 @@ Only search the range between just after the point and BOUND."
   "Return the mu4e attachment number at the point or nil."
   (get-text-property (point) 'mu4e-attnum))
 
+(declare-function mu4e-view-open-attachment "mu4e-view")
 (defun link-hint--open-mu4e-attachment (attnum)
   "Open the mu4e attachment having number ATTNUM."
   (mu4e-view-open-attachment nil attnum))
 
+(declare-function mu4e-view-save-attachment-single "mu4e-view")
 (defun link-hint--copy-mu4e-attachment (attnum)
   "Save the mu4e attachment having number ATTNUM."
-  (mu4e-view-save-attachment-single nil mu4e-att))
+  (mu4e-view-save-attachment-single nil attnum))
 
 (link-hint-define-type 'mu4e-attachment
   :next #'link-hint--next-mu4e-attachment
@@ -477,7 +464,7 @@ Only search the range between just after the point and BOUND."
   :next #'link-hint--next-help-link
   :at-point-p #'link-hint--help-link-at-point-p
   :vars '(help-mode)
-  :open #'link-hint--open-button
+  :open #'push-button
   :copy #'kill-new)
 
 ;; ** Info Link
@@ -537,9 +524,7 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--package-link-at-point-p
   :vars '(package-menu-mode paradox-menu-mode)
   :parse #'link-hint--parse-package-link
-  ;; doesn't work properly for all packages
-  ;; :open #'package-menu-describe-package
-  :open #'push-button
+  :open #'package-menu-describe-package
   :browse-url #'browse-url
   :browse-multiple t
   :copy #'kill-new)
@@ -553,7 +538,7 @@ Only search the range between just after the point and BOUND."
 Only search the range between just after the point and BOUND."
   ;; (link-hint--next-property-with-value
   ;;  'action 'package-keyword-button-action bound)
-  (link-hint--next-property 'package-keyword))
+  (link-hint--next-property 'package-keyword bound))
 
 (defun link-hint--package-keyword-link-at-point-p ()
   "Return the name of the package keywords at the point or nil."
@@ -573,7 +558,7 @@ Only search the range between just after the point and BOUND."
   (link-hint--next-property-with-value
    'action 'package-install-button-action bound))
 
-(defun link-hint--package-link-at-point-p ()
+(defun link-hint--package-install-link-at-point-p ()
   "If there is a package link at the point, return its name."
   (when (eq (get-text-property (point) 'action)
             'package-install-button-action)
@@ -581,7 +566,7 @@ Only search the range between just after the point and BOUND."
 
 (link-hint-define-type 'package-install-link
   :next #'link-hint--next-package-install-link
-  :at-point-p #'link-hint--package-link-at-point-p
+  :at-point-p #'link-hint--package-install-link-at-point-p
   :vars '(help-mode)
   :open #'push-button
   :open-message "Installed")
@@ -614,6 +599,7 @@ Only search the range between just after the point and BOUND."
   "Return the w3m link at the point or nil."
   (get-text-property (point) 'w3m-href-anchor))
 
+(declare-function w3m-view-this-url "w3m")
 (link-hint-define-type 'w3m-link
   :next #'link-hint--next-w3m-link
   :at-point-p #'link-hint--w3m-link-at-point-p
@@ -622,12 +608,23 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Woman Button
-;; separate type due to performance issues
+;; only using for woman since need `next-single-char-property-change' (slow)
+(defun link-hint--find-woman-button (&optional start-bound end-bound)
+  "Find the first woman button location.
+Only search the range between just after START-BOUND and END-BOUND."
+  (let ((start-bound (or start-bound (window-start)))
+        (end-bound (or end-bound (window-end)))
+        button)
+    (save-restriction
+      (narrow-to-region start-bound end-bound)
+      (setq button (next-button (point)))
+      (when button
+        (button-start button)))))
+
 (defun link-hint--next-woman-button (&optional bound)
-  "Find the next woman link.
+  "Find the next woman button location.
 Only search the range between just after the point and BOUND."
-  ;; this is slow (`next-single-char-property-change') but necessary for woman
-  (link-hint--next-button bound))
+  (link-hint--find-woman-button (point) bound))
 
 (link-hint-define-type 'woman-button
   :next #'link-hint--next-woman-button
@@ -816,11 +813,11 @@ for FUNC), `funcall' FUNC with ARGS. Finally, call FUNC alone."
   (when parser
     (setq args (funcall parser args action)))
   ;; TODO is there a way to know how many arguments a function takes?
-  (condition-case err
+  (condition-case nil
       (apply func args)
-    ('error (condition-case err
-                (funcall func args)
-              ('error (funcall func))))))
+    (error (condition-case nil
+               (funcall func args)
+             (error (funcall func))))))
 
 (defun link-hint--message (action &optional link-description type)
   "Display a message about an ACTION performed on a link.
