@@ -99,7 +99,7 @@ Here is the full list of settings:
 - =link-hint-avy-background=
 - =link-hint-avy-ignored-modes=
 
-By default, these variables are not bound, and avy's corresponding settings are used.
+By default, these variables are not bound, and avy's corresponding settings are used. =avy-styles-alist= and =avy-keys-alist= are also supported for the provided commands (as well as ~avy-resume~).
 
 ** Messaging
 By default, link-hint will print a message in the echo area when an action is performed. =link-hint-message= can be set to =nil= to disable this behavior. It can also be set to a custom message function such as ~lv-message~.
