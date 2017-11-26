@@ -304,6 +304,7 @@ Only search the range between just after the point and BOUND."
               eww-mode)
   :parse #'link-hint--process-url
   :open #'browse-url
+  :open-multiple t
   :copy #'kill-new)
 
 ;; ** File Link
@@ -380,6 +381,7 @@ Only search the range between just after the point and BOUND."
   ;; would need a comprehensive list of all modes that use shr.el
   ;; :vars
   :open #'browse-url
+  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Org link
@@ -407,6 +409,7 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--org-link-at-point-p
   :vars '(org-mode)
   :open #'link-hint--open-org-link
+  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Mu4e Url
@@ -429,6 +432,7 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--mu4e-url-at-point-p
   :vars '(mu4e-view-mode)
   :open #'link-hint--open-mu4e-url
+  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Mu4e Attachment
@@ -494,6 +498,7 @@ Only search the range between just after the point and BOUND."
                 'info-xref)
             (eq (get-text-property (point) 'font-lock-face)
                 'info-xref-visited))
+    ;; note: Info-mode doesn't use buttons
     (link-hint--property-text 'font-lock-face)))
 
 (defun link-hint--open-info-link (_)
@@ -535,6 +540,7 @@ Only search the range between just after the point and BOUND."
   ;; :open #'package-menu-describe-package
   :open #'push-button
   :browse-url #'browse-url
+  :browse-multiple t
   :copy #'kill-new)
 
 ;; ** Package Home Page Link (paradox only)
@@ -797,7 +803,8 @@ If there is only one link in LINKS, return it."
                          links
                          :test #'link-hint--equal)
               (when link-hint-message
-                (funcall link-hint-message "Aborted link selection.")))))
+                (funcall link-hint-message "Aborted link selection."))
+              nil)))
       (car links))))
 
 (defun link-hint--apply (func args &optional parser action)
@@ -953,8 +960,6 @@ values to copy the link to the clipboard and/or primary as well."  (interactive)
   (interactive)
   (link-hint--all :copy))
 
-(provide 'link-hint)
-
 ;; ** At Point Commands
 (defun link-hint--get-link-at-point ()
   "Return the link with the highest priority at the point or nil."
@@ -989,4 +994,5 @@ values to copy the link to the clipboard and/or primary as well."  (interactive)
   (interactive)
   (link-hint--action-at-point :copy))
 
+(provide 'link-hint)
 ;;; link-hint.el ends here
