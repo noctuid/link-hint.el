@@ -516,7 +516,7 @@ Only search the range between just after the point and BOUND."
   "Alter PACKAGE-DESC so that it can be passed to the ACTION function."
   (cl-case action
     (:browse-url (cdr (assq :url (package-desc-extras package-desc))))
-    ((:describe :copy) (package-desc-name package-desc))
+    ((:describe :copy) (symbol-name (package-desc-name package-desc)))
     (t package-desc)))
 
 (link-hint-define-type 'package-link
@@ -524,7 +524,7 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--package-link-at-point-p
   :vars '(package-menu-mode paradox-menu-mode)
   :parse #'link-hint--parse-package-link
-  :open #'package-menu-describe-package
+  :open #'describe-package
   :browse-url #'browse-url
   :browse-multiple t
   :copy #'kill-new)
@@ -853,7 +853,7 @@ If the point/window are not intentionally changed by the action, restore them."
                             (or (get type :describe) #'identity)
                             args
                             parser
-                            action))
+                            :describe))
          ret)
     (select-window link-win)
     (setq link-buffer (current-buffer)
