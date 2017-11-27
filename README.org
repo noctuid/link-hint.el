@@ -14,6 +14,7 @@ Currently the following types of links are supported:
 - File paths
 - Shr urls (e.g. elfeed links, links in html mu4e messages, eww urls, etc.)
 - Org mode urls (includes =mailto:= links)
+- Markdown links (including "wiki links"; see =markdown-enable-wiki-links=)
 - Mu4e links (urls and mailto addresses)
 - Mu4e attachments
 - Help mode links

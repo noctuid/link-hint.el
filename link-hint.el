@@ -53,6 +53,7 @@
   '(link-hint-shr-url
     ;; mode specific
     link-hint-org-link
+    link-hint-markdown-link
     link-hint-mu4e-url
     link-hint-mu4e-attachment
     link-hint-help-link
@@ -376,7 +377,7 @@ Only search the range between just after the point and BOUND."
   :open-multiple t
   :copy #'kill-new)
 
-;; ** Org link
+;; ** Org Link
 (defun link-hint--next-org-link (&optional bound)
   "Find the next org link.
 Only search the range between just after the point and BOUND."
@@ -403,6 +404,55 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--org-link-at-point-p
   :vars '(org-mode)
   :open #'link-hint--open-org-link
+  :open-multiple t
+  :copy #'kill-new)
+
+;; ** Markdown Link
+(declare-function markdown-next-link "markdown-mode")
+(defun link-hint--next-markdown-link (&optional bound)
+  "Find the next markdown link.
+Only search the range between just after the point and BOUND."
+  ;; `markdown-next-link' does not use text properties
+  (setq bound (or bound (window-end)))
+  (save-excursion
+    (let ((match-pos (markdown-next-link)))
+      (when (and match-pos
+                 (< match-pos bound))
+        match-pos))))
+
+(declare-function markdown-link-at-pos "markdown-mode")
+(declare-function markdown-wiki-link-p "markdown-mode")
+(declare-function markdown-wiki-link-link "markdown-mode")
+(defun link-hint--markdown-link-at-point-p ()
+  "Return the markdown link at the point or nil."
+  (if (markdown-wiki-link-p)
+      (markdown-wiki-link-link)
+    (let ((link (markdown-link-at-pos (point))))
+      (unless (cl-every #'null link)
+        link))))
+
+(defun link-hint--parse-markdown-link (link action)
+  "Alter LINK so that it can be passed to the ACTION function."
+  (cl-case action
+    ((:describe :copy) (if (listp link)
+                           (nth 3 link)
+                         link))
+    (t link)))
+
+(declare-function markdown-link-follow-link-at-point "markdown-mode")
+(declare-function markdown-link-follow-wiki-link "markdown-mode")
+(defun link-hint--open-markdown-link (link)
+  "Open the markdown link at the point or LINK."
+  (if (listp link)
+      (markdown-follow-link-at-point)
+    (markdown-follow-wiki-link link)))
+
+(link-hint-define-type 'markdown-link
+  :next #'link-hint--next-markdown-link
+  :at-point-p #'link-hint--markdown-link-at-point-p
+  :vars '(markdown-mode)
+  :parser #'link-hint--parse-markdown-link
+  :open #'link-hint--open-markdown-link
   :open-multiple t
   :copy #'kill-new)
 
