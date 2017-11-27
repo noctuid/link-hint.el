@@ -107,7 +107,7 @@ By default, link-hint will print a message in the echo area when an action is pe
 =link-hint-action-messages= is a plist that is used for the default description of each action keyword (e.g. =:open "Opened"=).
 
 ** Point/Window Restoration
-If moving to the link involves changing the window or point position, link-hint will automatically restore both when it makes sense to. For example, if the action opens a new window, the old window will not be restored. If a local org link (for another heading in the same file) is followed, the old position will not be restored.
+Link hint will move the point (and sometimes the window; see =avy-all-windows=) when acting on a link. When =link-hint-restore= is a non-nil value, link-hint will automatically restore the point and window when the link action does not intentionally change the point/window. For example, if =link-hint-avy-all-windows= is a non-nil value, and the user copies a link in a different window, the point will stay the same in the buffer containing the link, and the selected window will stay the same. On the other hand, if the user opens a url in ~eww~ in a new window, the ~eww~ window will be selected, but the point in the link buffer will be restored. Similarly, if the user opens an org link to a local (same buffer) heading, the point and window will not be restored.
 
 ** Defining New Link Types and Actions
 ~link-hint-define-type~ is the helper function used to define new link types. ~link-hint-define-type~ is just simple helper to alter the symbol plist of =link-hint-<type>= (though it is recommended to use it directly in case the implementation changes). For example, here is how =shr-url= could be defined if it did not already exist:

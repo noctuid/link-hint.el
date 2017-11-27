@@ -110,6 +110,15 @@ See issue #15 for more information."
   :group 'link-hint
   :type 'boolean)
 
+(defcustom link-hint-restore t
+  "Whether to restore the point and window after opening a link.
+Note that the point will never be restored if the action intentionally moves the
+point within the link buffer (e.g. opening a local org heading link). Similarly,
+the window will never be restored if the action intentionally opens/selects a
+new window (e.g. opening a url in `eww')."
+  :group 'link-hint
+  :type 'boolean)
+
 ;; ** Avy Settings
 ;;  these only have an effect if bound by the user
 (defvar link-hint-avy-style)
@@ -846,6 +855,7 @@ If the point/window are not intentionally changed by the action, restore them."
          link-buffer-original-pos
          (link-pos (plist-get link :pos))
          (link-win (plist-get link :win))
+         new-win-buffer
          (type (plist-get link :type))
          (parser (get type :parse))
          (args (plist-get link :args))
@@ -860,20 +870,29 @@ If the point/window are not intentionally changed by the action, restore them."
           link-buffer-original-pos (point))
     (goto-char link-pos)
     (setq ret (link-hint--apply (get type action) args parser action))
-    ;; TODO doesn't work
-    (cond ((and (eq (current-buffer) link-buffer)
-                (= (point) link-pos))
-           ;; when buffer and position don't change, restore position and window
-           ;; (no side effects have occurred)
-           (goto-char link-buffer-original-pos)
-           (select-window original-win))
-          ((not (eq (current-buffer) link-buffer))
-           ;; when buffer changes, restore position in old buffer
-           (with-current-buffer link-buffer
-             (goto-char link-buffer-original-pos)))
-          ;; when buffer doesn't change but position does (e.g. local org
-          ;; link), do nothing
-          )
+    (when link-hint-restore
+      ;; note: selected window can change without current buffer changing, so
+      ;; check selected window
+      (setq new-win-buffer (window-buffer (selected-window)))
+      (cond ((and (eq new-win-buffer link-buffer)
+                  (= (point) link-pos))
+             ;; when buffer and position don't change, restore position and
+             ;; window (no side effects have occurred)
+             (goto-char link-buffer-original-pos)
+             (select-window original-win))
+            ((not (eq new-win-buffer link-buffer))
+             ;; when buffer changes, restore position in old buffer
+             (with-selected-window link-win
+               ;; so will only change position if link-win still holds
+               ;; link-buffer TODO cannot change point using
+               ;; `with-current-buffer' unless the selected window holds the
+               ;; buffer; use a temporary window if it doesn't (unlikely
+               ;; scenario)?
+               (with-current-buffer link-buffer
+                 (goto-char link-buffer-original-pos))))
+            ;; when buffer doesn't change but position does (e.g. local org
+            ;; link), do nothing
+            ))
     (link-hint--message action link-description type)
     ret))
 
