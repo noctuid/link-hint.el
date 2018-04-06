@@ -1,7 +1,6 @@
 [[http://melpa.org/#/link-hint][file:http://melpa.org/packages/link-hint-badge.svg]]
 
 * Demonstration
-[[http://melpa.org/#/link-hint][file:http://melpa.org/packages/link-hint-badge.svg]]
 Using this package to install this package:
 [[http://noctuid.github.io/link-hint.el/assets/paradox_demonstration.gif][http://noctuid.github.io/link-hint.el/assets/paradox_demonstration.gif]]
 
