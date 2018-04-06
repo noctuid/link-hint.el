@@ -56,6 +56,8 @@
     link-hint-markdown-link
     link-hint-mu4e-url
     link-hint-mu4e-attachment
+    link-hint-gnus-w3m-url
+    link-hint-gnus-w3m-image-url
     link-hint-help-link
     link-hint-info-link
     link-hint-package-link
@@ -506,6 +508,44 @@ Only search the range between just after the point and BOUND."
   :vars '(mu4e-view-mode)
   :open #'link-hint--open-mu4e-attachment
   :copy #'link-hint--copy-mu4e-attachment)
+
+;; ** Gnus w3m Url
+;; only applicable when `mm-text-html-renderer' is gnus-w3m; shr is the default
+(defun link-hint--next-gnus-w3m-url (&optional bound)
+  "Find the next gnus-w3m url.
+Only search the range between just after the point and BOUND."
+  (link-hint--next-property 'gnus-string bound))
+
+(defun link-hint--gnus-w3m-url-at-point-p ()
+  "Return the gnus-w3m url at the point or nil."
+  (get-text-property (point) 'gnus-string))
+
+(link-hint-define-type 'gnus-w3m-url
+  :next #'link-hint--next-gnus-w3m-url
+  :at-point-p #'link-hint--gnus-w3m-url-at-point-p
+  :vars '(gnus-article-mode)
+  :open #'browse-url
+  :open-multiple t
+  :copy #'kill-new)
+
+;; ** Gnus w3m Image Url
+;; only applicable when `mm-text-html-renderer' is gnus-w3m; shr is the default
+(defun link-hint--next-gnus-w3m-image-url (&optional bound)
+  "Find the next gnus-w3m image url.
+Only search the range between just after the point and BOUND."
+  (link-hint--next-property 'image-url bound))
+
+(defun link-hint--gnus-w3m-image-url-at-point-p ()
+  "Return the gnus-w3m image url at the point or nil."
+  (get-text-property (point) 'image-url))
+
+(link-hint-define-type 'gnus-w3m-image-url
+  :next #'link-hint--next-gnus-w3m-image-url
+  :at-point-p #'link-hint--gnus-w3m-image-url-at-point-p
+  :vars '(gnus-article-mode)
+  :open #'browse-url
+  :open-multiple t
+  :copy #'kill-new)
 
 ;; ** Help Link
 (defun link-hint--next-help-link (&optional bound)
