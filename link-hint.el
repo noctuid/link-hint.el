@@ -1,4 +1,4 @@
-;; link-hint.el --- Use avy to open, copy, etc. visible links. -*- lexical-binding: t -*-
+;;; link-hint.el --- Use avy to open, copy, etc. visible links. -*- lexical-binding: t -*-
 
 ;; Author: Fox Kiester <noct@openmailbox.org>
 ;; URL: https://github.com/noctuid/link-hint.el
