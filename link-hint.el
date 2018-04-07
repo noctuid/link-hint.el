@@ -65,6 +65,7 @@
     link-hint-package-install-link
     link-hint-compilation-link
     link-hint-w3m-link
+    link-hint-w3m-message-link
     link-hint-woman-button
     ;; link-hint-customize-widget
     ;; generic
@@ -687,7 +688,7 @@ Only search the range between just after the point and BOUND."
   ;; no simple way to get message for copying
   :open #'compile-goto-error)
 
-;; ** W3M Link
+;; ** w3m Link
 (defun link-hint--next-w3m-link (&optional bound)
   "Find the next w3m link.
 Only search the range between just after the point and BOUND."
@@ -704,6 +705,16 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--w3m-link-at-point-p
   :vars '(w3m-mode)
   :open #'w3m-view-this-url
+  :copy #'kill-new)
+
+;; ** w3m Message Link
+;; w3m can be used for rendering email (e.g. `mm-text-html-renderer' is w3m)
+;; same as w3m link but with different open action
+(link-hint-define-type 'w3m-message-link
+  :next #'link-hint--next-w3m-link
+  :at-point-p #'link-hint--w3m-link-at-point-p
+  :vars '(gnus-article-mode)
+  :open #'browse-url
   :copy #'kill-new)
 
 ;; ** Woman Button

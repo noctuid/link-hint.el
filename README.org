@@ -16,7 +16,7 @@ Currently the following types of links are supported:
 - Markdown links (including "wiki links"; see =markdown-enable-wiki-links=)
 - Mu4e links (urls and mailto addresses)
 - Mu4e attachments
-- Gnus html mail rendered with gnus-w3m (instead of shr)
+- Gnus html mail rendered with gnus-w3m or emacs-w3m (instead of shr)
 - Help mode links
 - Info mode links
 - Package menu links (describe package, install package, keyword buttons, etc.)
