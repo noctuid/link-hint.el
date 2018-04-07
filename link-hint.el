@@ -47,7 +47,7 @@
 (defgroup link-hint nil
   "Provides commands for operating on visible links with avy."
   :group 'convenience
-  :prefix 'link-hint-)
+  :prefix "link-hint-")
 
 (defcustom link-hint-types
   '(link-hint-shr-url
