@@ -67,6 +67,7 @@
     link-hint-w3m-link
     link-hint-w3m-message-link
     link-hint-woman-button
+    link-hint-nov-link
     ;; link-hint-customize-widget
     ;; generic
     link-hint-button
@@ -376,6 +377,7 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--shr-url-at-point-p
   ;; would need a comprehensive list of all modes that use shr.el
   ;; :vars
+  :not-vars '(nov-mode)
   :open #'browse-url
   :open-multiple t
   :copy #'kill-new)
@@ -741,6 +743,18 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--button-at-point-p
   :vars '(woman-mode)
   :open #'push-button
+  :copy #'kill-new)
+
+;; ** Nov.el Link
+(defun link-hint--nov-browse ()
+  "Call `nov-browse-url' with no args."
+  (nov-browse-url))
+
+(link-hint-define-type 'nov-link
+  :next #'link-hint--next-shr-url
+  :at-point-p #'link-hint--shr-url-at-point-p
+  :vars '(nov-mode)
+  :open #'link-hint--nov-browse
   :copy #'kill-new)
 
 ;; ** Customize Widget
