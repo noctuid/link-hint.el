@@ -997,20 +997,30 @@ If the point/window are not intentionally changed by the action, restore them."
       (setq new-win-buffer (window-buffer (selected-window)))
       (cond ((and (eq new-win-buffer link-buffer)
                   (= (point) link-pos))
-             ;; when buffer and position don't change, restore position and
-             ;; window (no side effects have occurred)
+             ;; when the buffer doesn't change and the point is still at the
+             ;; link, restore the position and window (no side effects have
+             ;; occurred)
              (goto-char link-buffer-original-pos)
-             (select-window original-win))
-            ((not (eq new-win-buffer link-buffer))
-             ;; when buffer changes, restore position in old buffer
-             (with-selected-window link-win
-               ;; so will only change position if link-win still holds
-               ;; link-buffer TODO cannot change point using
-               ;; `with-current-buffer' unless the selected window holds the
-               ;; buffer; use a temporary window if it doesn't (unlikely
-               ;; scenario)?
-               (with-current-buffer link-buffer
-                 (goto-char link-buffer-original-pos))))
+             (when (window-valid-p original-win)
+               (select-window original-win)))
+            ((and (buffer-live-p link-buffer)
+                  (not (eq new-win-buffer link-buffer)))
+             ;; when the buffer changes and the old buffer still exists, restore
+             ;; the original position in the old buffer
+             (if (and
+                  ;; old window still exists
+                  (window-valid-p link-win)
+                  ;; old window still holds original buffer
+                  (eq link-buffer (window-buffer link-win)))
+                 ;; restore the point in that window
+                 (set-window-point link-win link-buffer-original-pos)
+               ;; `save-excursion' to prevent altering the current window's
+               ;; point; only set the buffer's point since it is no longer
+               ;; displayed in the old window
+               ;; see https://www.gnu.org/software/emacs/manual/html_node/elisp/Point.html#Point
+               (save-excursion
+                 (with-current-buffer link-buffer
+                   (goto-char link-buffer-original-pos)))))
             ;; when buffer doesn't change but position does (e.g. local org
             ;; link), do nothing
             ))
