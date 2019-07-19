@@ -1,6 +1,6 @@
 ;;; link-hint.el --- Use avy to open, copy, etc. visible links. -*- lexical-binding: t -*-
 
-;; Author: Fox Kiester <noct@openmailbox.org>
+;; Author: Fox Kiester <noct@posteo.net>
 ;; URL: https://github.com/noctuid/link-hint.el
 ;; Keywords: convenience url avy link links hyperlink
 ;; Package-Requires: ((avy "0.4.0") (emacs "24.1") (cl-lib "0.5"))
