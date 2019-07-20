@@ -68,6 +68,7 @@
     link-hint-w3m-link
     link-hint-w3m-message-link
     link-hint-woman-button
+    link-hint-treemacs
     link-hint-nov-link
     ;; link-hint-customize-widget
     ;; generic
@@ -363,7 +364,7 @@ Only search the range between just after the point and BOUND."
   :next #'link-hint--next-button
   :at-point-p #'link-hint--button-at-point-p
   ;; TODO add more
-  :not-vars '(woman-mode)
+  :not-vars '(woman-mode treemacs-mode)
   :open #'push-button
   :copy #'kill-new)
 
@@ -417,6 +418,33 @@ Only search the range between just after the point and BOUND."
   :open #'link-hint--open-org-link
   :open-multiple t
   :copy #'kill-new)
+
+;; ** Treemacs Link
+(defun link-hint--open-treemacs-button ()
+  "Open an entry in a treemacs buffer."
+  (if (string-prefix-p " *Treemacs-" (buffer-name))
+      (treemacs-visit-node-in-most-recently-used-window)
+    (treemacs-visit-node-default)))
+
+(defun link-hint--copy-treemacs ()
+  "Copy an entry in a treemacs buffer."
+  (kill-new (format "%s"
+                    (treemacs-button-get
+                     (treemacs-node-at-point) :key))))
+
+(defun link-hint--treemacs-at-point-p()
+  "`:at-point-p' for treemacs buffers."
+  (let ((node (treemacs-node-at-point)))
+    (when node
+      (format "%s" (treemacs-button-get node :key)))))
+
+(link-hint-define-type 'treemacs
+  :next #'link-hint--next-button
+  :at-point-p #'link-hint--treemacs-at-point-p
+  :vars '(treemacs-mode)
+  :open #'link-hint--open-treemacs-button
+  :open-multiple t
+  :copy #'link-hint--copy-treemacs)
 
 ;; ** Markdown Link
 (declare-function markdown-next-link "markdown-mode")
