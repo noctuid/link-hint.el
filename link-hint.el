@@ -935,7 +935,8 @@ If the link TYPE does not satisfy the necessary predicates, return nil."
 
 (defun link-hint--process (links)
   "Select a link from LINKS using avy.
-If there is only one link in LINKS, return it."
+If there is only one link in LINKS and `avy-single-candidate-jump' is non-nil,
+return it."
   (let ((avy-background (if (boundp 'link-hint-avy-background)
                             link-hint-avy-background
                           avy-background))
@@ -944,7 +945,8 @@ If there is only one link in LINKS, return it."
                     avy-keys))
         ;; prevent window from shifting avy overlays out of view
         (scroll-margin 0))
-    (if (cdr links)
+    (if (or (cdr links)
+            (not avy-single-candidate-jump))
         (save-selected-window
           (let* ((avy-action #'identity)
                  (pos (avy--process
