@@ -105,7 +105,7 @@ example."
   :type 'regexp)
 
 (defcustom link-hint-maybe-file-regexp
-  (rx (or bol blank) (zero-or-one "~") "/" (1+ not-newline))
+  (rx (or bol blank) (zero-or-one (or "~" (seq (char alpha) ":"))) "/" (1+ not-newline))
   "Regexp used to determine what constitutes a potential file link."
   :group 'link-hint
   :type 'regexp)
