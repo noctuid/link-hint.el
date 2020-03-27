@@ -70,7 +70,7 @@
     link-hint-woman-button
     link-hint-treemacs
     link-hint-nov-link
-    ;; link-hint-customize-widget
+    link-hint-customize-widget
     ;; generic
     link-hint-button
     link-hint-text-url
@@ -807,12 +807,17 @@ Only search the range between just after the point and BOUND."
 ;;   "Open the customize widget at the point."
 ;;   (Custom-newline (point)))
 
+(defun link-hint--customize-widget-at-point-p ()
+  "Return button of the customize widget at point or nil."
+  (when (get-char-property (point) 'button)
+    (point)))
+
 (link-hint-define-type 'customize-widget
   :next #'link-hint--next-customize-widget
-  :at-point-p #'link-hint--button-at-point-p
+  :at-point-p #'link-hint--customize-widget-at-point-p
   :vars '(Custom-mode)
-  :open #'push-button
-  :copy #'kill-new)
+  :open #'Custom-newline
+  :describe #'ignore)
 
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
