@@ -899,7 +899,7 @@ Only search the range between just after the point and BOUND."
   "Collect all visible links in the current buffer."
   (let (all-link-positions)
     (dolist (bounds (link-hint--find-visible-regions (window-start)
-                                                     (window-end)))
+                                                     (window-end nil t)))
       (dolist (type link-hint-types)
         (when (link-hint--type-valid-p type)
           (setq all-link-positions
