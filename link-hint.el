@@ -253,7 +253,7 @@ link-hint-NAME."
 (defun link-hint--var-valid-p (var)
   "Return t if VAR is bound and true or is the current major mode."
   (or (eq var major-mode)
-      (and (boundp var) (symbol-value var))))
+      (bound-and-true-p var)))
 
 (defun link-hint--type-valid-p (type)
   "Return whether TYPE is a valid type for the current buffer.
