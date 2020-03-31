@@ -991,11 +991,10 @@ adding an :<action>-message property to the link TYPE."
                    (get type (intern (format "%s-message" action))))
                  (plist-get link-hint-action-messages action)
                  (format "Called %s on" action))
-             (concat (or (when (numberp link-description)
-                           (format "%s links" link-description))
-                         link-description
-                         "a link")
-                     "."))))
+             (or (when (numberp link-description)
+                   (format "%s links" link-description))
+                 link-description
+                 "a link"))))
 
 (defun link-hint--action (action link)
   "Take ACTION on LINK.
