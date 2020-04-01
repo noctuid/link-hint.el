@@ -3,7 +3,7 @@
 ;; Author: Fox Kiester <noct@posteo.net>
 ;; URL: https://github.com/noctuid/link-hint.el
 ;; Keywords: convenience url avy link links hyperlink
-;; Package-Requires: ((avy "0.4.0") (emacs "24.1") (cl-lib "0.5"))
+;; Package-Requires: ((avy "0.4.0") (emacs "25.1") (cl-lib "0.5"))
 ;; Version: 0.1
 
 ;; This file is not part of GNU Emacs.
@@ -1061,31 +1061,46 @@ If the point/window are not intentionally changed by the action, restore them."
                           properties)
            collect type))
 
+(defun link-hint-call-with-valid-links (filter callback &rest properties)
+  "Call CALLBACK on links of types filtered by FILTER and PROPERTIES.
+FILTER is called with the list of types valid for PROPERTIES (as
+returned by `link-hint--valid-types') as its sole argument.
+CALLBACK is called with the list of links as its sole argument."
+  (let ((link-hint-types
+         (seq-filter filter (apply #'link-hint--valid-types properties))))
+    (funcall callback (link-hint--get-links))))
+
 (defun link-hint--one (action)
   "Take ACTION on one visible link selected with avy."
-  (let* ((link-hint-types (link-hint--valid-types action))
-         (links (link-hint--get-links))
-         link)
-    (when links
-      (setq link (link-hint--process links))
-      (when link
-        (link-hint--action action link)))))
+  (link-hint-call-with-valid-links
+   #'identity
+   (lambda (links)
+     (when links
+       (when-let ((link (link-hint--process links)))
+         (link-hint--action action link))))
+   action))
+
+(defun link-hint--filter-multiple (type)
+  "Return non-nil if TYPE is suitable for multiple actions."
+  (not (get type :no-multiple)))
 
 (defun link-hint--multiple (action)
   "Take ACTION on multiple visible links selected with avy."
-  (let* ((link-hint-types (link-hint--valid-types action))
-         (links (link-hint--get-links))
-         link
-         chosen-links)
-    (while (setq link (link-hint--process links))
-      (push link chosen-links))
-    (link-hint--links-action action (nreverse chosen-links))))
+  (link-hint-call-with-valid-links
+   #'link-hint--filter-multiple
+   (lambda (links)
+     (let (link chosen-links)
+       (while (setq link (link-hint--process links))
+         (push link chosen-links))
+       (link-hint--links-action action (nreverse chosen-links))))
+   action))
 
 (defun link-hint--all (action)
   "Take ACTION on all visible links."
-  (let* ((link-hint-types (link-hint--valid-types action))
-         (links (link-hint--get-links)))
-    (link-hint--links-action action links)))
+  (link-hint-call-with-valid-links
+   #'link-hint--filter-multiple
+   (apply-partially #'link-hint--links-action action)
+   action))
 
 ;; * User Commands
 ;; ** Avy Commands
