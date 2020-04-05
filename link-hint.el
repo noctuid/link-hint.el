@@ -803,21 +803,22 @@ Only search the range between just after the point and BOUND."
 ;;                       (eq (car (widget-tabable-at))
 ;;                           'editable-field)))
 
-;; (defun link-hint--open-customize-widget ()
-;;   "Open the customize widget at the point."
-;;   (Custom-newline (point)))
+(defun link-hint--open-customize-widget ()
+  "Open the customize widget at the point."
+  (Custom-newline (point)))
 
 (defun link-hint--customize-widget-at-point-p ()
-  "Return button of the customize widget at point or nil."
-  (when (get-char-property (point) 'button)
-    (point)))
+  "Return button text of the customize widget at the point or nil."
+  (let ((button (get-char-property (point) 'button)))
+    (when button
+      (plist-get (cdr button) :tag))))
 
 (link-hint-define-type 'customize-widget
   :next #'link-hint--next-customize-widget
   :at-point-p #'link-hint--customize-widget-at-point-p
   :vars '(Custom-mode)
-  :open #'Custom-newline
-  :describe #'ignore)
+  :open #'link-hint--open-customize-widget
+  :copy #'kill-new)
 
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
