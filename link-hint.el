@@ -3,7 +3,7 @@
 ;; Author: Fox Kiester <noct@posteo.net>
 ;; URL: https://github.com/noctuid/link-hint.el
 ;; Keywords: convenience url avy link links hyperlink
-;; Package-Requires: ((avy "0.4.0") (emacs "24.1") (cl-lib "0.5"))
+;; Package-Requires: ((avy "0.4.0") (emacs "25.1") (cl-lib "0.5"))
 ;; Version: 0.1
 
 ;; This file is not part of GNU Emacs.
@@ -308,7 +308,6 @@ Only search the range between just after the point and BOUND."
               eww-mode)
   :parse #'link-hint--process-url
   :open #'browse-url
-  :open-multiple t
   :copy #'kill-new)
 
 ;; ** File Link
@@ -386,7 +385,6 @@ Only search the range between just after the point and BOUND."
   ;; :vars
   :not-vars '(nov-mode)
   :open #'browse-url
-  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Org Link
@@ -416,7 +414,6 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--org-link-at-point-p
   :vars '(org-mode)
   :open #'link-hint--open-org-link
-  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Treemacs Link
@@ -443,7 +440,6 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--treemacs-at-point-p
   :vars '(treemacs-mode)
   :open #'link-hint--open-treemacs-button
-  :open-multiple t
   :copy #'link-hint--copy-treemacs)
 
 ;; ** Markdown Link
@@ -492,7 +488,6 @@ Only search the range between just after the point and BOUND."
   :vars '(markdown-mode)
   :parser #'link-hint--parse-markdown-link
   :open #'link-hint--open-markdown-link
-  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Mu4e Url
@@ -516,7 +511,6 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--mu4e-url-at-point-p
   :vars '(mu4e-view-mode)
   :open #'link-hint--open-mu4e-url
-  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Mu4e Attachment
@@ -562,7 +556,6 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--gnus-w3m-url-at-point-p
   :vars '(gnus-article-mode)
   :open #'browse-url
-  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Gnus w3m Image Url
@@ -581,7 +574,6 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--gnus-w3m-image-url-at-point-p
   :vars '(gnus-article-mode)
   :open #'browse-url
-  :open-multiple t
   :copy #'kill-new)
 
 ;; ** Help Link
@@ -662,7 +654,6 @@ Only search the range between just after the point and BOUND."
   :parse #'link-hint--parse-package-link
   :open #'describe-package
   :browse-url #'browse-url
-  :browse-multiple t
   :copy #'kill-new)
 
 ;; ** Package Home Page Link (paradox only)
@@ -1075,33 +1066,46 @@ If the point/window are not intentionally changed by the action, restore them."
                           properties)
            collect type))
 
+(defun link-hint-call-with-valid-links (filter callback &rest properties)
+  "Call CALLBACK on links of types filtered by FILTER and PROPERTIES.
+FILTER is called with the list of types valid for PROPERTIES (as
+returned by `link-hint--valid-types') as its sole argument.
+CALLBACK is called with the list of links as its sole argument."
+  (let ((link-hint-types
+         (seq-filter filter (apply #'link-hint--valid-types properties))))
+    (funcall callback (link-hint--get-links))))
+
 (defun link-hint--one (action)
   "Take ACTION on one visible link selected with avy."
-  (let* ((link-hint-types (link-hint--valid-types action))
-         (links (link-hint--get-links))
-         link)
-    (when links
-      (setq link (link-hint--process links))
-      (when link
-        (link-hint--action action link)))))
+  (link-hint-call-with-valid-links
+   #'identity
+   (lambda (links)
+     (when links
+       (when-let ((link (link-hint--process links)))
+         (link-hint--action action link))))
+   action))
+
+(defun link-hint--filter-multiple (type)
+  "Return non-nil if TYPE is suitable for multiple actions."
+  (not (get type :no-multiple)))
 
 (defun link-hint--multiple (action)
   "Take ACTION on multiple visible links selected with avy."
-  (let* ((multiple-action (intern (format "%s-multiple" action)))
-         (link-hint-types (link-hint--valid-types action multiple-action))
-         (links (link-hint--get-links))
-         link
-         chosen-links)
-    (while (setq link (link-hint--process links))
-      (push link chosen-links))
-    (link-hint--links-action action (nreverse chosen-links))))
+  (link-hint-call-with-valid-links
+   #'link-hint--filter-multiple
+   (lambda (links)
+     (let (link chosen-links)
+       (while (setq link (link-hint--process links))
+         (push link chosen-links))
+       (link-hint--links-action action (nreverse chosen-links))))
+   action))
 
 (defun link-hint--all (action)
   "Take ACTION on all visible links."
-  (let* ((multiple-action (intern (format "%s-multiple" action)))
-         (link-hint-types (link-hint--valid-types action multiple-action))
-         (links (link-hint--get-links)))
-    (link-hint--links-action action links)))
+  (link-hint-call-with-valid-links
+   #'link-hint--filter-multiple
+   (apply-partially #'link-hint--links-action action)
+   action))
 
 ;; * User Commands
 ;; ** Avy Commands
