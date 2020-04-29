@@ -5,7 +5,7 @@ Using this package to install this package:
 [[http://noctuid.github.io/link-hint.el/assets/paradox_demonstration.gif][http://noctuid.github.io/link-hint.el/assets/paradox_demonstration.gif]]
 
 * About
-=link-hint.el= is inspired by the link hinting functionality in vim-like browsers and browser plugins such as pentadactyl. It provides commands for using avy to open, copy, or take a user-defined action on "links."
+=link-hint.el= is inspired by the link hinting functionality in vim-like browsers and browser plugins such as pentadactyl. It provides commands for using avy (or ivy or another completion framework) to open, copy, or take a user-defined action on "links."
 
 Currently the following types of links are supported:
 
@@ -35,6 +35,7 @@ There is also [[https://github.com/abo-abo/ace-link][ace-link]] which I didn't k
 - link-hint supports operating on multiple different types of links with the same command in the same buffer; types are optionally tied to major modes, but generic link support is also provided (e.g. buttons and file paths)
 - link-hint supports easily adding more link types and actions
 - link-hint supports operating on multiple links at a time
+- link-hint supports selecting links with completion frameworks like ivy, helm, selectrum, etc.
 
 ** Basic Setup
 Basic usage of this package only requires making key bindings for ~link-hint-open-link~ or other commands. Here is an example configuration using [[https://github.com/jwiegley/use-package][use-package]]:
@@ -54,6 +55,7 @@ Here is an example configuration for evil:
 
 (define-key evil-normal-state-map (kbd "SPC f") 'link-hint-open-link)
 #+end_src
+
 ** Browser Choice
 ~browse-url~ is used for opening urls, so in the case that the desired browser is not being used by default, the user can set ~browse-url-browser-function~:
 
@@ -81,6 +83,8 @@ This package provides the following commands for operating on links:
 - ~link-hint-copy-link~ - Use avy to select and copy a single visible link to the kill ring. ~select-enable-clipboard~ and ~select-enable-clipboard~ can each be set to a non-nil value to also use the clipboard and/or primary.
 
 ~link-hint-copy-multiple-links~ and ~link-hint-copy-all-links~ also exist, but they may not be useful very often.
+
+These commands are all just short wrappers around ~link-hint-avy-select~. If you want a specific behavior that isn't provided by one of these commands, you can define your own command using it.
 
 This package does not bind any commands by default.
 
@@ -111,8 +115,58 @@ By default, link-hint will print a message in the echo area when an action is pe
 ** Point/Window Restoration
 Link hint will move the point (and sometimes the window; see =avy-all-windows=) when acting on a link. When =link-hint-restore= is a non-nil value, link-hint will automatically restore the point and window when the link action does not intentionally change the point/window. For example, if =link-hint-avy-all-windows= is a non-nil value, and the user copies a link in a different window, the point will stay the same in the buffer containing the link, and the selected window will stay the same. On the other hand, if the user opens a url in ~eww~ in a new window, the ~eww~ window will be selected, but the point in the link buffer will be restored. Similarly, if the user opens an org link to a local (same buffer) heading, the point and window will not be restored.
 
+** Selecting Actions
+link-hint allows selecting actions before or after selecting links. You can select the action to take in the following ways:
+- Select the action beforehand by using a specific command/keybinding (e.g. bind a key to ~link-hint-open~)
+- Select the action with =link-hint-action-completing-read-function= before or after selecting a link
+  - For example, bind a key directly to ~link-hint-avy-select~ to select the action before
+  - For example, bind a key to a command that calls ~(link-hint-avy-select :prompt-after t)~ to select the action after selecting a link
+- Select an action using =avy-dispatch-alist=, =ivy-set-actions=, or some other framework-specific method
+
+Deciding on the action beforehand has the advantage of narrowing the valid links to only those that support the action. By default, link-hint uses ~completing-read~ for action selection (e.g. will use ivy if ~ivy-mode~ is enabled). If you wanted to use avy, for example, you could set it to ~frog-menu-completing-read-function~ from [[https://github.com/clemera/frog-menu][frog-menu]].
+
+Note that if you use a framework-specific method for selecting the action, it is possible to select an invalid action for a given link. If you select the action after the link with the builtin method, link-hint will only show valid actions. If you use =avy-dispatch-alist= or ~~ivy-dispatching-done~, then there is no validation, and it is up to you to select a valid action.
+
+Here is an example of how to use =avy-dispatch-alist= to set an action:
+#+begin_src emacs-lisp
+(defun my-link-hint-avy-select ()
+  (interactive)
+  (let ((avy-dispatch-alist
+         ;; bind . to set the action to :copy
+         (list (cons ?\. (lambda (pt)
+                           (link-hint-set-action :copy)
+                           pt)))))
+    ;; default to :open
+    (link-hint-avy-select :action :open :prompt-after t)))
+#+end_src
+
+Here is an example of how to use ivy actions to select an action if you use ~ivy-mode~:
+#+begin_src emacs-lisp
+(defun my-link-hint-completing-select ()
+  (interactive)
+  (link-hint-completing-select :action :open :prompt-after t))
+
+(ivy-set-actions
+ 'my-link-hint-completing-select
+ '(("c" (lambda (_) (link-hint-set-action :copy)) "copy link")))
+#+end_src
+
+** Selecting Links with Helm, Ivy, Selectrum, etc.
+If you want to select from all links in the current buffer with ivy or another completion framework, you can use ~link-hint-completing-select~. If bound directly to a key, it will prompt for an action and then allow selecting any link in the current buffer. It uses =link-hint-link-completing-read-function= for selecting a single link or =link-hint-link-completing-read-multiple-function= for selecting multiple links. These default to ~completing-read~ and ~completing-read-multiple~ respectively. If you have ~ivy-mode~ (supports ~completing-read~), ~selectrum-mode~ (supports both ~completing-read~ and ~completing-read-multiple~), etc. enabled, you do not need to explicitly set these variables.
+
+~link-hint-completing-select~ also supports selecting only from visible links or from multiple windows (based on =(link-)hint-avy-all-windows= or whether it is passed =:all-windows <arg>=). For more information, see its docstring. link-hint does not provide any other commands since there are a large number of possible combinations. You can create more specific yourself commands if you need to:
+#+begin_src emacs-lisp
+(defun my-link-hint-completing-open ()
+  (interactive)
+  (link-hint-completing-select :action :open))
+
+(defun my-link-hint-completing-open-multiple ()
+  (interactive)
+  (link-hint-completing-select :action :open :multiple t))
+#+end_src
+
 ** Defining New Link Types and Actions
-~link-hint-define-type~ is the helper function used to define new link types. ~link-hint-define-type~ is just simple helper to alter the symbol plist of =link-hint-<type>= (though it is recommended to use it directly in case the implementation changes). For example, here is how =shr-url= could be defined if it did not already exist:
+~link-hint-define-type~ is the helper function used to define new link types. ~link-hint-define-type~ is just simple helper to alter the symbol plist of =link-hint-<type>= (though you should always use it directly in case the implementation changes; it now does some extra work). For example, here is how =shr-url= could be defined if it did not already exist:
 #+begin_src emacs-lisp
 (link-hint-define-type 'shr-url
   :next #'link-hint--next-shr-url

@@ -76,7 +76,6 @@
     link-hint-text-url
     link-hint-file-link)
   "Link types to check for."
-  :group 'link-hint
   :type '(repeat :tag "Link type" symbol))
 
 (defcustom link-hint-action-messages
@@ -84,12 +83,10 @@
     :open "Opened"
     :browse-url "Browsed")
   "Plist of action to description message pairs."
-  :group 'link-hint
   :type 'list)
 
 (defcustom link-hint-message #'message
   "The funtion to use to message information or nil."
-  :group 'link-hint
   :type '(choice
           (function :tag "Function to use to message")
           (const :tag "Don't message" nil)))
@@ -101,20 +98,17 @@ Defaults to `goto-address-url-regxp'. Note that this is used for text urls in
 modes that don't have some mechanism for supporting urls. This won't affect
 link-hint's behavior in `org-mode' or modes that use shr.el for urls, for
 example."
-  :group 'link-hint
   :type 'regexp)
 
 (defcustom link-hint-maybe-file-regexp
   (rx (or bol blank) (zero-or-one (or "~" (seq (char alpha) ":"))) "/" (1+ not-newline))
   "Regexp used to determine what constitutes a potential file link."
-  :group 'link-hint
   :type 'regexp)
 
 (defcustom link-hint-delete-trailing-paren t
   "Whether to delete a ) at the end of a url.
 This is a workaround for Emacs libraries including unwanted parens in urls.
 See issue #15 for more information."
-  :group 'link-hint
   :type 'boolean)
 
 (defcustom link-hint-restore t
@@ -123,8 +117,22 @@ Note that the point will never be restored if the action intentionally moves the
 point within the link buffer (e.g. opening a local org heading link). Similarly,
 the window will never be restored if the action intentionally opens/selects a
 new window (e.g. opening a url in `eww')."
-  :group 'link-hint
   :type 'boolean)
+
+(defcustom link-hint-action-completing-read-function
+  #'completing-read
+  "Function to use to select an action."
+  :type 'function)
+
+(defcustom link-hint-link-completing-read-function
+  #'completing-read
+  "Function to use to select an link."
+  :type 'function)
+
+(defcustom link-hint-link-completing-read-multiple-function
+  #'completing-read-multiple
+  "Function to use to select multiple links."
+  :type 'function)
 
 ;; ** Avy Settings
 ;;  these only have an effect if bound by the user
@@ -232,6 +240,22 @@ Only search the range from between just after the point and BOUND."
   "Preface SYMBOL with \"link-hint-\"."
   (intern (format "link-hint-%S" symbol)))
 
+(defvar link-hint--non-actions
+  '(:at-point-p :describe :next :not-vars :parse :predicates :vars)
+  "List of keywords that are not for actions.")
+
+(defvar link-hint--actions nil
+  "List of link hint actions added with `link-hint-define-type' so far.")
+
+(defun link-hint--action-p (sym)
+  "Return whether SYM is a valid action."
+  (and (not (memq sym link-hint--non-actions))
+       ;; TODO get rid of :<action>-multiple and
+       ;; :<action>-message?
+       (not (string-match (rx (or (seq "-multiple" eol)
+                                  (seq "-message" eol)))
+                          (format "%s" sym)))))
+
 ;;;###autoload
 (defun link-hint-define-type (name &rest properties)
   "Add a new type of link called NAME to link-hint.el.
@@ -241,7 +265,10 @@ link-hint-NAME."
   (let ((type (link-hint- name)))
     (cl-loop for (prop value)
              on properties by 'cddr
-             do (put type prop value))))
+             do (put type prop value)
+             and do
+             (when (link-hint--action-p prop)
+               (cl-pushnew prop link-hint--actions)))))
 
 ;; ** Helpers
 (defun link-hint--min (&rest numbers)
@@ -255,7 +282,7 @@ link-hint-NAME."
   (or (eq var major-mode)
       (bound-and-true-p var)))
 
-(defun link-hint--type-valid-p (type)
+(defun link-hint--type-valid-for-buffer-p (type)
   "Return whether TYPE is a valid type for the current buffer.
 This is done by checking that all its predicates hold, that at least one of its
 variables is bound and true or the current `major-mode', and that none of its
@@ -490,7 +517,7 @@ Only search the range between just after the point and BOUND."
   :next #'link-hint--next-markdown-link
   :at-point-p #'link-hint--markdown-link-at-point-p
   :vars '(markdown-mode)
-  :parser #'link-hint--parse-markdown-link
+  :parse #'link-hint--parse-markdown-link
   :open #'link-hint--open-markdown-link
   :open-multiple t
   :copy #'kill-new)
@@ -820,7 +847,7 @@ Only search the range between just after the point and BOUND."
   :open #'link-hint--open-customize-widget
   :copy #'kill-new)
 
-;; * Avy/Action Helper Functions
+;; * Avy Helper Functions
 (defun link-hint--collect (start end type)
   "Between START and END in the current buffer, collect all links of TYPE."
   (save-excursion
@@ -901,16 +928,21 @@ Only search the range between just after the point and BOUND."
   "Return whether link X's position is before link Y's."
   (< (plist-get x :pos) (plist-get y :pos)))
 
-(defun link-hint--collect-visible-links ()
-  "Collect all visible links in the current buffer."
-  (let (all-link-positions)
-    (dolist (bounds (link-hint--find-visible-regions (window-start)
-                                                     (window-end nil t)))
-      (dolist (type link-hint-types)
-        (when (link-hint--type-valid-p type)
-          (setq all-link-positions
-                (append all-link-positions
-                        (link-hint--collect (car bounds) (cdr bounds) type))))))
+(defun link-hint--links (&optional visible-only)
+  "Return all valid links for the current buffer.
+If VISIBLE-ONLY is non-nil, only look between the window start and end."
+  (let ((start (if visible-only
+                   (window-start)
+                 (point-min)))
+        (end (if visible-only
+                 (window-end nil t)
+               (point-max)))
+        all-link-positions)
+    (dolist (type link-hint-types)
+      (when (link-hint--type-valid-for-buffer-p type)
+        (setq all-link-positions
+              (append all-link-positions
+                      (link-hint--collect start end type)))))
     (sort (cl-delete-duplicates all-link-positions
                                 :test #'link-hint--equal
                                 ;; types earlier in `link-hint-types' have
@@ -918,20 +950,35 @@ Only search the range between just after the point and BOUND."
                                 :from-end t)
           #'link-hint--<)))
 
-(cl-defun link-hint--get-links ()
-  "Return a list of all visible links (potentially in multiple windows)."
-  (let ((avy-all-windows (if (boundp 'link-hint-avy-all-windows)
-                             link-hint-avy-all-windows
-                           avy-all-windows))
-        (avy-all-windows-alt (if (boundp 'link-hint-avy-all-windows-alt)
-                                 link-hint-avy-all-windows-alt
-                               avy-all-windows-alt))
+;; TODO test all-windows and all-windows-alt
+;; TODO all-windows-alt with completing-read?
+(cl-defun link-hint--get-links (&key
+                                visible-only
+                                (all-windows nil all-windows-specified)
+                                (all-windows-alt nil all-windows-alt-specified))
+  "Return a list of all links (potentially in multiple windows).
+If VISIBLE-ONLY is non-nil, only return links within the window boundaries. If
+ALL-WINDOWS is specified, use it instead of `link-hint-avy-all-windows' or
+`avy-all-windows'. If ALL-WINDOWS-ALT is specified, use it instead of
+`link-hint-avy-all-windows-alt' or `avy-all-windows-alt'."
+  (let ((avy-all-windows (cond (all-windows-specified
+                                all-windows)
+                               ((boundp 'link-hint-avy-all-windows)
+                                link-hint-avy-all-windows)
+                               (t
+                                avy-all-windows)))
+        (avy-all-windows-alt (cond (all-windows-alt-specified
+                                    all-windows-alt)
+                                   ((boundp 'link-hint-avy-all-windows-alt)
+                                    link-hint-avy-all-windows-alt)
+                                   (t
+                                    avy-all-windows-alt)))
         (avy-ignored-modes (if (boundp 'link-hint-avy-ignored-modes)
                                link-hint-avy-ignored-modes
                              avy-ignored-modes))
         links)
     (avy-dowindows current-prefix-arg
-      (setq links (append links (link-hint--collect-visible-links))))
+      (setq links (append links (link-hint--links visible-only))))
     (if links
         links
       (when link-hint-message
@@ -970,6 +1017,44 @@ return it."
               nil)))
       (car links))))
 
+;; * Action Helper Functions
+(defvar link-hint--current-action nil
+  "The action to take on a link.
+The global value of this variable is ignored by link-hint commands.")
+
+(defun link-hint-set-action (action)
+  "Set the action for the next command to ACTION.
+This function is meant to be used, for example, as an ivy action or in
+`avy-dispatch-alist'."
+  (setq link-hint--current-action action))
+
+(defun link-hint--actions-for-type (type)
+  "Return the defined actions for a link TYPE."
+  (cl-loop for (key value)
+           on (symbol-plist type)
+           by 'cddr
+           when (link-hint--action-p key)
+           collect key))
+
+(defun link-hint--actions-for-types (types)
+  "Return the actions that are defined for all link TYPES."
+  (cl-reduce #'cl-intersection
+             (mapcar #'link-hint--actions-for-type types)))
+
+(defun link-hint--read-action (&optional types)
+  "Read the action to take using `link-hint-action-completing-read-function'.
+If TYPES is specified, restrict actions to those supported for TYPES."
+  (let ((action (funcall link-hint-action-completing-read-function
+                         "Select link action: "
+                         (if types
+                             (link-hint--actions-for-types types)
+                           link-hint--actions)
+                         nil
+                         t)))
+    (when action
+      ;; `completing-read' returns symbol as string
+      (intern action))))
+
 (defun link-hint--apply (func args &optional parser action)
   "Try to call FUNC with ARGS.
 If PARSER is specified, first change ARGS by passing PARSER ARGS and ACTION.
@@ -1002,6 +1087,15 @@ adding an :<action>-message property to the link TYPE."
                  link-description
                  "a link"))))
 
+(defun link-hint--describe (link)
+  "Return the description for LINK."
+  (let ((type (plist-get link :type)))
+    (link-hint--apply
+     (or (get type :describe) #'identity)
+     (plist-get link :args)
+     (get type :parse)
+     :describe)))
+
 (defun link-hint--action (action link)
   "Take ACTION on LINK.
 If the point/window are not intentionally changed by the action, restore them."
@@ -1014,11 +1108,7 @@ If the point/window are not intentionally changed by the action, restore them."
          (type (plist-get link :type))
          (parser (get type :parse))
          (args (plist-get link :args))
-         (link-description (link-hint--apply
-                            (or (get type :describe) #'identity)
-                            args
-                            parser
-                            :describe))
+         (link-description (link-hint--describe link))
          ret)
     (select-window link-win)
     (setq link-buffer (current-buffer)
@@ -1068,40 +1158,162 @@ If the point/window are not intentionally changed by the action, restore them."
       (link-hint--action action link)))
   (link-hint--message action (length links)))
 
-(defun link-hint--valid-types (&rest properties)
-  "Return a list of valid link hint types based on PROPERTIES."
+(defun link-hint--types-with-props (&rest properties)
+  "Return a list of valid link hint types based on PROPERTIES.
+A type is considered valid if it has every property."
   (cl-loop for type in link-hint-types
            when (cl-every (lambda (prop) (get type prop))
                           properties)
            collect type))
 
-(defun link-hint--one (action)
-  "Take ACTION on one visible link selected with avy."
-  (let* ((link-hint-types (link-hint--valid-types action))
-         (links (link-hint--get-links))
-         link)
-    (when links
-      (setq link (link-hint--process links))
-      (when link
-        (link-hint--action action link)))))
+;; * Selection
+;; ** Base Select Helper
+(cl-defun link-hint--select (selector
+                             &key
+                             action
+                             prompt-after
+                             multiple
+                             visible-only
+                             (all-windows nil all-windows-specified)
+                             (all-windows-alt
+                              nil
+                              all-windows-alt-specified))
+  "Select a link to act on with SELECTOR.
+SELECTOR should be a function that takes (links multiple) as arguments - a list
+of links and whether to select multiple links. It should return a list of links.
+If there are no valid links, SELECTOR will not be called.
 
-(defun link-hint--multiple (action)
-  "Take ACTION on multiple visible links selected with avy."
-  (let* ((multiple-action (intern (format "%s-multiple" action)))
-         (link-hint-types (link-hint--valid-types action multiple-action))
-         (links (link-hint--get-links))
-         link
-         chosen-links)
-    (while (setq link (link-hint--process links))
-      (push link chosen-links))
-    (link-hint--links-action action (nreverse chosen-links))))
+If ACTION is nil, prompt for an action using
+`link-hint-action-completing-read-function'. If PROMPT-AFTER is non-nil, wait
+until after selecting a link to prompt for an action (if one was not defined
+while selecting the link, e.g. with avy or ivy's action systems). If MULTIPLE is
+non-nil, pass a non-nil second argument to SELECTOR. If VISIBLE-ONLY is non-nil,
+only consider links in the visible portion of the window. If ALL-WINDOWS is
+specified, use it instead of `link-hint-avy-all-windows' or `avy-all-windows'.
+If ALL-WINDOWS-ALT is specified., use it instead of
+`link-hint-avy-all-windows-alt' or `avy-all-windows-alt'."
+  (let* (
+         ;; only allow changing value for command duration and ignore the global
+         ;; value
+         (link-hint--current-action (or action
+                                        (unless prompt-after
+                                          (link-hint--read-action))))
+         (multiple-action
+          (when (and multiple link-hint--current-action)
+            (intern (format "%s-multiple" link-hint--current-action))))
+         (link-hint-types (if link-hint--current-action
+                              (if multiple
+                                  (link-hint--types-with-props
+                                   link-hint--current-action multiple-action)
+                                (link-hint--types-with-props
+                                 link-hint--current-action))
+                            link-hint-types))
+         (get-links-args (append (list :visible-only visible-only)
+                                 (when all-windows-specified
+                                   (list :all-windows all-windows))
+                                 (when all-windows-alt-specified
+                                   (list :all-windows-alt all-windows-alt))))
+         (links (apply #'link-hint--get-links get-links-args))
+         (selected-links (when links
+                           (funcall selector links multiple))))
+    (when selected-links
+      (let ((types (mapcar (lambda (link) (plist-get link :type))
+                           selected-links)))
+        (unless link-hint--current-action
+          (setq link-hint--current-action (link-hint--read-action types)))
+        (link-hint--links-action link-hint--current-action
+                                 (nreverse selected-links))))))
 
-(defun link-hint--all (action)
-  "Take ACTION on all visible links."
-  (let* ((multiple-action (intern (format "%s-multiple" action)))
-         (link-hint-types (link-hint--valid-types action multiple-action))
-         (links (link-hint--get-links)))
-    (link-hint--links-action action links)))
+;; ** Avy Select
+(defun link-hint--avy-select (links &optional multiple)
+  "Select links to act on from LINKS using avy.
+If MULTIPLE is nil, allow selecting multiple links."
+  (let (link chosen-links)
+    (if multiple
+        (progn (while (setq link (link-hint--process links))
+                 (push link chosen-links))
+               (nreverse chosen-links))
+      (list (link-hint--process links)))))
+
+;;;###autoload
+(defun link-hint-avy-select (&rest
+                             all-args
+                             &key
+                             action
+                             prompt-after
+                             multiple
+                             all-windows
+                             all-windows-alt)
+
+  "Select and act on one or more links with completing read.
+If ACTION is nil, prompt for an action using avy. If PROMPT-AFTER is non-nil,
+wait until after selecting a link to prompt for an action (if one was not
+defined while selecting the link, e.g. with ivy's action system). If MULTIPLE is
+non-nil, allow selecting multiple links. If ALL-WINDOWS is specified, use it
+instead of `link-hint-avy-all-windows' or `avy-all-windows'. If ALL-WINDOWS-ALT
+is specified., use it instead of `link-hint-avy-all-windows-alt' or
+`avy-all-windows-alt'."
+  (interactive)
+  (apply #'link-hint--select #'link-hint--avy-select all-args))
+
+;; ** Completing Read Select
+;; TODO using win and pos to ensure every entry is unique
+(defun link-hint--for-completion-table (link)
+  "Return a modified LINK that can be used in a `completing-read' collection.
+If LINK has no description, return nil."
+  (let ((description (link-hint--describe link)))
+    (when description
+      (cons description link))))
+
+(defun link-hint--completing-select (links &optional multiple)
+  "Select links to act on from LINKS using completing read.
+IF MULTIPLE is non-nil, use `link-hint-completing-read-multiple-function'.
+Otherwise `link-hint-completing-read-function'."
+  (let* ((named-links (remove nil (cl-mapcar #'link-hint--for-completion-table
+                                             links)))
+         (link-keys (if multiple
+                        (funcall
+                         link-hint-link-completing-read-multiple-function
+                         "Select links: " named-links nil t)
+                      (list (funcall link-hint-link-completing-read-function
+                                     "Select link: " named-links nil t)))))
+    (when link-keys
+      (mapcar (lambda (link-key) (cdr (assoc link-key named-links)))
+              link-keys))))
+
+;;;###autoload
+(cl-defun link-hint-completing-select (&rest
+                                       all-args
+                                       &key action
+                                       prompt-after
+                                       multiple
+                                       visible-only
+                                       all-windows
+                                       all-windows-alt)
+  "Select and act on one or more links with completing read.
+If ACTION is nil, prompt for an action using
+`link-hint-action-completing-read-function'. If PROMPT-AFTER is non-nil, wait
+until after selecting a link to prompt for an action (if one was not defined
+while selecting the link, e.g. with ivy's action system). If MULTIPLE is
+non-nil, read multiple links with
+`link-hint-link-completing-read-multiple-function'. If VISIBLE-ONLY is non-nil,
+only consider links in the visible portion of the window. If ALL-WINDOWS is
+specified, use it instead of `link-hint-avy-all-windows' or `avy-all-windows'.
+If ALL-WINDOWS-ALT is specified., use it instead of
+`link-hint-avy-all-windows-alt' or `avy-all-windows-alt'."
+  (interactive)
+  (apply #'link-hint--select
+         #'link-hint--completing-select
+         all-args))
+
+;; ** Select all
+(defun link-hint-select-all (&rest all-args)
+  "Select and act on all links.
+ALL-ARGS are the args passed to `link-hint--select'"
+  (apply #'link-hint--select
+         (lambda (links &rest _) links)
+         :multiple t
+         all-args))
 
 ;; * User Commands
 ;; ** Avy Commands
@@ -1110,50 +1322,50 @@ If the point/window are not intentionally changed by the action, restore them."
   "Use avy to open a visible link."
   (interactive)
   (avy-with link-hint-open-link
-    (link-hint--one :open)))
+    (link-hint-avy-select :action :open)))
 
 ;;;###autoload
 (defun link-hint-copy-link ()
   "Copy a visible link of a supported type to the kill ring with avy.
 `select-enable-clipboard' and `select-enable-primary' can be set to non-nil
-values to copy the link to the clipboard and/or primary as well."  (interactive)
+values to copy the link to the clipboard and/or primary as well."
+  (interactive)
   (avy-with link-hint-copy-link
-    (link-hint--one :copy)))
+    (link-hint-avy-select :action :copy)))
 
 ;;;###autoload
 (defun link-hint-open-multiple-links ()
   "Use avy to open multiple visible links at once."
   (interactive)
   (avy-with link-hint-open-multiple-links
-    (link-hint--multiple :open)))
+    (link-hint-avy-select :action :open :multiple t)))
 
 ;;;###autoload
 (defun link-hint-copy-multiple-links ()
   "Use avy to copy multiple visible links at once to the kill ring."
   (interactive)
   (avy-with link-hint-copy-multiple-links
-    (link-hint--multiple :copy)))
+    (link-hint-avy-select :action :copy :multiple t)))
 
+;; ** All Links Commands
 ;;;###autoload
 (defun link-hint-open-all-links ()
   "Open all visible links."
   (interactive)
-  (avy-with link-hint-open-all-links
-    (link-hint--all :open)))
+  (link-hint-select-all :action :open :visible-only t))
 
 ;;;###autoload
 (defun link-hint-copy-all-links ()
   "Copy all visible links."
   (interactive)
-  (avy-with link-hint-copy-all-links
-    (link-hint--all :copy)))
+  (link-hint-select-all :action :copy :visible-only t))
 
 ;; ** At Point Commands
 (defun link-hint--get-link-at-point ()
   "Return the link with the highest priority at the point or nil."
   (let (args)
     (cl-dolist (type link-hint-types)
-      (when (and (link-hint--type-valid-p type)
+      (when (and (link-hint--type-valid-for-buffer-p type)
                  (setq args (funcall (get type :at-point-p))))
         (cl-return (list :pos (point)
                          :win (get-buffer-window)
@@ -1162,7 +1374,7 @@ values to copy the link to the clipboard and/or primary as well."  (interactive)
 
 (defun link-hint--action-at-point (action)
   "Take ACTION on the highest priority link at the point."
-  (let ((link-hint-types (link-hint--valid-types action))
+  (let ((link-hint-types (link-hint--types-with-props action))
         (link (link-hint--get-link-at-point)))
     (if link
         (link-hint--action action link)
@@ -1177,6 +1389,7 @@ values to copy the link to the clipboard and/or primary as well."  (interactive)
   (interactive)
   (link-hint--action-at-point :open))
 
+;;;###autoload
 (defun link-hint-copy-link-at-point ()
   "Copy the link with the highest priority at the point."
   (interactive)
