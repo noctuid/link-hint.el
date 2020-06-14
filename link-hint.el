@@ -64,6 +64,7 @@
     link-hint-package-link
     link-hint-package-keyword-link
     link-hint-package-install-link
+    link-hint-epkg-button
     link-hint-compilation-link
     link-hint-w3m-link
     link-hint-w3m-message-link
@@ -706,6 +707,65 @@ Only search the range between just after the point and BOUND."
   :vars '(help-mode)
   :open #'push-button
   :open-message "Installed")
+
+;; ** epkg Button
+(defun link-hint--overlay-epkg-category (overlay)
+  "If OVERLAY contains a category of epkg, return it."
+  (let ((category (overlay-get overlay 'category)))
+    (when category
+      (catch 'category
+        (dolist (type '(epkg-package
+                        epkg-author
+                        epkg-keyword
+                        epkg-library))
+          (when (eq category (button-category-symbol type))
+            (throw 'category type)))))))
+
+(defun link-hint--next-epkg-button (&optional bound)
+  "Find the next epkg button.
+Only search the range between just after the point and BOUND."
+  (catch 'found
+    (save-restriction
+      (let (pos)
+        (narrow-to-region (point) (or bound (point-max)))
+        (save-excursion
+          (while (and (setq pos (next-overlay-change (point)))
+                      (< pos (point-max)))
+            (dolist (ol (overlays-at pos))
+              (let ((category (link-hint--overlay-epkg-category ol)))
+                (when category
+                  (throw 'found pos))))
+            (goto-char pos))
+          nil)))))
+
+(defun link-hint--at-epkg-button-p ()
+  "If the point is at an epkg button, return its label."
+  (catch 'text
+    (dolist (ol (overlays-at (point)))
+      (when (link-hint--overlay-epkg-category ol)
+        (throw 'text (buffer-substring-no-properties
+                      (overlay-start ol) (overlay-end ol)))))))
+
+(defun link-hint--open-epkg-button ()
+  "Open an epkg button at point."
+  (let ((label (link-hint--at-epkg-button-p)))
+    (cl-case (link-hint--overlay-epkg-category (car (overlays-at (point))))
+      ('epkg-package
+       (epkg-describe-package label))
+      ('epkg-author
+       (epkg-list-packages-by-author label))
+      ('epkg-keyword
+       (epkg-list-keyworded-packages (intern label)))
+      ('epkg-library
+       (find-library label)))))
+
+(link-hint-define-type 'epkg-button
+  :next #'link-hint--next-epkg-button
+  :at-point-p #'link-hint--at-epkg-button-p
+  :vars '(help-mode)
+  :open #'link-hint--open-epkg-button
+  :open-message "Following"
+  :copy #'kill-new)
 
 ;; ** Compilation Link
 (defun link-hint--next-compilation-link (&optional bound)
