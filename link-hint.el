@@ -954,7 +954,7 @@ return it."
             (not avy-single-candidate-jump))
         (save-selected-window
           (let* ((avy-action #'identity)
-                 (pos (avy--process
+                 (pos (avy-process
                        (mapcar (lambda (x) (cons (plist-get x :pos)
                                                  (plist-get x :win)))
                                links)
