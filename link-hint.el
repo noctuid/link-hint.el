@@ -416,7 +416,7 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'org-link
   :next #'link-hint--next-org-link
   :at-point-p #'link-hint--org-link-at-point-p
-  :vars '(org-mode org-link-minor-mode)
+  :vars '(org-mode org-agenda-mode org-link-minor-mode)
   :open #'link-hint--open-org-link
   :open-multiple t
   :copy #'kill-new)
