@@ -1,9 +1,9 @@
-;;; link-hint.el --- Use avy to open, copy, etc. visible links. -*- lexical-binding: t -*-
+;;; link-hint.el --- Use avy to open, copy, etc. visible links -*- lexical-binding: t -*-
 
 ;; Author: Fox Kiester <noct@posteo.net>
 ;; URL: https://github.com/noctuid/link-hint.el
 ;; Keywords: convenience url avy link links hyperlink
-;; Package-Requires: ((avy "0.4.0") (emacs "24.1") (cl-lib "0.5"))
+;; Package-Requires: ((avy "0.4.0") (emacs "24.4"))
 ;; Version: 0.1
 
 ;; This file is not part of GNU Emacs.
@@ -19,7 +19,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+;; along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 ;; This packages provides commands for operating on visible links with avy. It
@@ -159,7 +159,7 @@ Only search the range between just after START-BOUND and END-BOUND."
 Only search the range between just after the point and BOUND."
   (link-hint--find-regexp search-regexp (point) bound))
 
-(declare-function widget-forward "wid-edit")
+(declare-function widget-forward "ext:wid-edit")
 (defun link-hint--next-widget (&optional bound)
   "Find the next widget location. Currently only used for custom mode.
 Only search the range between just after the point and BOUND."
@@ -422,6 +422,10 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Treemacs Link
+(declare-function treemacs-visit-node-in-most-recently-used-window "ext:treemacs")
+(declare-function treemacs-visit-node-default "ext:treemacs")
+(declare-function treemacs-button-get "ext:treemacs")
+(declare-function treemacs-node-at-point "ext:treemacs")
 (defun link-hint--open-treemacs-button ()
   "Open an entry in a treemacs buffer."
   (if (string-prefix-p " *Treemacs-" (buffer-name))
@@ -449,7 +453,7 @@ Only search the range between just after the point and BOUND."
   :copy #'link-hint--copy-treemacs)
 
 ;; ** Markdown Link
-(declare-function markdown-next-link "markdown-mode")
+(declare-function markdown-next-link "ext:markdown-mode")
 (defun link-hint--next-markdown-link (&optional bound)
   "Find the next markdown link.
 Only search the range between just after the point and BOUND."
@@ -461,9 +465,9 @@ Only search the range between just after the point and BOUND."
                  (< match-pos bound))
         match-pos))))
 
-(declare-function markdown-link-at-pos "markdown-mode")
-(declare-function markdown-wiki-link-p "markdown-mode")
-(declare-function markdown-wiki-link-link "markdown-mode")
+(declare-function markdown-link-at-pos "ext:markdown-mode")
+(declare-function markdown-wiki-link-p "ext:markdown-mode")
+(declare-function markdown-wiki-link-link "ext:markdown-mode")
 (defun link-hint--markdown-link-at-point-p ()
   "Return the markdown link at the point or nil."
   (if (markdown-wiki-link-p)
@@ -480,8 +484,8 @@ Only search the range between just after the point and BOUND."
                          link))
     (t link)))
 
-(declare-function markdown-link-follow-link-at-point "markdown-mode")
-(declare-function markdown-link-follow-wiki-link "markdown-mode")
+(declare-function markdown-follow-link-at-point "ext:markdown-mode")
+(declare-function markdown-follow-wiki-link "ext:markdown-mode")
 (defun link-hint--open-markdown-link (link)
   "Open the markdown link at the point or LINK."
   (if (listp link)
@@ -507,7 +511,7 @@ Only search the range between just after the point and BOUND."
   "Return the mu4e url at the point or nil."
   (get-text-property (point) 'mu4e-url))
 
-(declare-function mu4e~view-browse-url-from-binding "mu4e-view")
+(declare-function mu4e~view-browse-url-from-binding "ext:mu4e-view")
 (defun link-hint--open-mu4e-url (url)
   "Open the mu4e URL."
   ;; note: browse-url also supports mailto
@@ -531,12 +535,12 @@ Only search the range between just after the point and BOUND."
   "Return the mu4e attachment number at the point or nil."
   (get-text-property (point) 'mu4e-attnum))
 
-(declare-function mu4e-view-open-attachment "mu4e-view")
+(declare-function mu4e-view-open-attachment "ext:mu4e-view")
 (defun link-hint--open-mu4e-attachment (attnum)
   "Open the mu4e attachment having number ATTNUM."
   (mu4e-view-open-attachment nil attnum))
 
-(declare-function mu4e-view-save-attachment-single "mu4e-view")
+(declare-function mu4e-view-save-attachment-single "ext:mu4e-view")
 (defun link-hint--copy-mu4e-attachment (attnum)
   "Save the mu4e attachment having number ATTNUM."
   (mu4e-view-save-attachment-single nil attnum))
@@ -606,6 +610,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Info Link
+(declare-function Info-follow-nearest-node "info")
 (defun link-hint--next-info-link (&optional bound)
   "Find the next info link.
 Only search the range between just after the point and BOUND."
@@ -710,6 +715,9 @@ Only search the range between just after the point and BOUND."
   :open-message "Installed")
 
 ;; ** epkg Button
+(declare-function epkg-list-keyworded-packages "ext:epkg")
+(declare-function epkg-list-packages-by-author "ext:epkg")
+(declare-function epkg-describe-package "ext:epkg")
 (defun link-hint--overlay-epkg-category (overlay)
   "If OVERLAY contains a category of epkg, return it."
   (let ((category (overlay-get overlay 'category)))
@@ -769,6 +777,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Compilation Link
+(declare-function compile-goto-error "compile")
 (defun link-hint--next-compilation-link (&optional bound)
   "Find the next compilation link.
 Only search the range between just after the point and BOUND."
@@ -796,7 +805,7 @@ Only search the range between just after the point and BOUND."
   "Return the w3m link at the point or nil."
   (get-text-property (point) 'w3m-href-anchor))
 
-(declare-function w3m-view-this-url "w3m")
+(declare-function w3m-view-this-url "ext:w3m")
 (link-hint-define-type 'w3m-link
   :next #'link-hint--next-w3m-link
   :at-point-p #'link-hint--w3m-link-at-point-p
@@ -841,6 +850,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Nov.el Link
+(declare-function nov-browse-url "ext:nov")
 (defun link-hint--nov-browse ()
   "Call `nov-browse-url' with no args."
   (nov-browse-url))
@@ -853,6 +863,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Customize Widget
+(declare-function Custom-newline "cus-edit")
 (defun link-hint--next-customize-widget (&optional bound)
   "Find the next package customize widget.
 Only search the range between just after the point and BOUND."
