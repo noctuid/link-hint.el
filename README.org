@@ -24,6 +24,7 @@ Currently the following types of links are supported:
 - W3m links (urls, email addresses, etc.)
 - Customize links
 - Nov.el links
+- notmuch-hello links
 - Other button links (e.g. WoMan links, ag mode, etc.)
 
 Feel free to request support for any useful link type I may have missed. Also, if you think it would be beneficial to have a more specific link type split from a more generic link type, feel free to make an issue. For example, there may be some specific type of button you want to ignore or use in a custom command without affecting other buttons.
