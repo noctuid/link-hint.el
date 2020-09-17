@@ -72,6 +72,7 @@
     link-hint-treemacs
     link-hint-nov-link
     link-hint-customize-widget
+    link-hint-notmuch-hello
     ;; generic
     link-hint-button
     link-hint-text-url
@@ -891,6 +892,34 @@ Only search the range between just after the point and BOUND."
   :vars '(Custom-mode)
   :open #'link-hint--open-customize-widget
   :copy #'kill-new)
+
+;; ** notmuch-hello widgets
+(defun link-hint--widget-button-at-point-p ()
+  "Return point of the customize widget at the point or nil."
+  (when (get-char-property (point) 'button) (point)))
+
+(defun link-hint--next-widget-button (bound)
+  "Return pos of the next widget up to BOUND."
+  (let ((start (point)))
+    (save-excursion
+      (widget-forward 1)
+      (while (not (link-hint--widget-button-at-point-p))
+        (widget-forward 1))
+      (when (and (link-hint--widget-button-at-point-p)
+                 (> (point) start)
+                 (< (point) bound))
+        (point)))))
+
+(defun link-hint--copy-widget (pos)
+  "Copy the text of the button at POS."
+  (kill-new (widget-get (widget-at pos) :value)))
+
+(link-hint-define-type 'notmuch-hello
+  :next #'link-hint--next-widget-button
+  :at-point-p #'link-hint--widget-button-at-point-p
+  :vars '(notmuch-hello-mode)
+  :open #'widget-button-press
+  :copy #'link-hint--copy-widget)
 
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
