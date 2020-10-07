@@ -1249,6 +1249,7 @@ values to copy the link to the clipboard and/or primary as well."  (interactive)
   (interactive)
   (link-hint--action-at-point :open))
 
+;;;###autoload
 (defun link-hint-copy-link-at-point ()
   "Copy the link with the highest priority at the point."
   (interactive)
