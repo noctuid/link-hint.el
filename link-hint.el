@@ -495,7 +495,7 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'markdown-link
   :next #'link-hint--next-markdown-link
   :at-point-p #'link-hint--markdown-link-at-point-p
-  :vars '(markdown-mode)
+  :vars '(markdown-mode gfm-mode markdown-view-mode)
   :parser #'link-hint--parse-markdown-link
   :open #'link-hint--open-markdown-link
   :open-multiple t
