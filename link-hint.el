@@ -59,6 +59,7 @@
     link-hint-mu4e-attachment
     link-hint-gnus-w3m-url
     link-hint-gnus-w3m-image-url
+    link-hint-deadgrep
     link-hint-help-link
     link-hint-info-link
     link-hint-package-link
@@ -862,6 +863,23 @@ Only search the range between just after the point and BOUND."
   :vars '(nov-mode)
   :open #'link-hint--nov-browse
   :copy #'kill-new)
+
+;; ** Deadgrep matches
+(declare-function deadgrep-visit-resul "ext:deadgrep")
+(defun link-hint--next-deadgrep-link (&optional bound)
+  "Find the next deadgrep link.
+Only search the range between just after the point and BOUND."
+  (link-hint--next-property-with-value 'face 'deadgrep-match-face bound))
+
+(defun link-hint--deadgrep-link-at-point-p ()
+  "Return the link message at the point or nil."
+  (link-hint--property-text 'deadgrep-filename))
+
+(link-hint-define-type 'deadgrep
+  :next #'link-hint--next-deadgrep-link
+  :at-point-p #'link-hint--deadgrep-link-at-point-p
+  :vars '(deadgrep-mode)
+  :open #'deadgrep-visit-result)
 
 ;; ** Customize Widget
 (declare-function Custom-newline "cus-edit")
