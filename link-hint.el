@@ -723,7 +723,7 @@ Only search the range between just after the point and BOUND."
 (defun link-hint--overlay-epkg-category (overlay)
   "If OVERLAY contains a category of epkg, return it."
   (let ((category (overlay-get overlay 'category)))
-    (when category
+    (when (and category (require 'epkg nil t))
       (catch 'category
         (dolist (type '(epkg-package
                         epkg-author
