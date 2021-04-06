@@ -657,6 +657,8 @@ Only search the range between just after the point and BOUND."
   "Return the name of the package at the point or nil."
   (get-text-property (point) 'package-desc))
 
+(declare-function package-desc-name "ext:package")
+(declare-function package-desc-extras "ext:package")
 (defun link-hint--parse-package-link (package-desc action)
   "Alter PACKAGE-DESC so that it can be passed to the ACTION function."
   (cl-case action
