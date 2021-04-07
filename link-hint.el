@@ -423,6 +423,15 @@ Only search the range between just after the point and BOUND."
   :open-multiple t
   :copy #'kill-new)
 
+;; ** Org-roam Link
+(link-hint-define-type 'org-roam-link
+  :next #'link-hint--next-org-link
+  :at-point-p #'link-hint--org-link-at-point-p
+  :vars '(org-mode org-agenda-mode org-roam-mode org-link-minor-mode)
+  :open #'link-hint--open-org-link
+  :open-multiple t
+  :copy #'kill-new)
+
 ;; ** Treemacs Link
 (declare-function treemacs-visit-node-in-most-recently-used-window "ext:treemacs")
 (declare-function treemacs-visit-node-default "ext:treemacs")
