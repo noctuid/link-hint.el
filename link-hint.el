@@ -80,7 +80,34 @@
     link-hint-file-link)
   "Link types to check for."
   :group 'link-hint
-  :type '(repeat :tag "Link type" symbol))
+  :type '(repeat :tag "Types"
+                 (choice
+                  (const :tag "Button" link-hint-button)
+                  (const :tag "Compilation Link" link-hint-compilation-link)
+                  (const :tag "Customize Widget" link-hint-customize-widget)
+                  (const :tag "Deadgrep" link-hint-deadgrep)
+                  (const :tag "Epkg Button" link-hint-epkg-button)
+                  (const :tag "File Link" link-hint-file-link)
+                  (const :tag "Gnus W3m Image Url" link-hint-gnus-w3m-image-url)
+                  (const :tag "Gnus W3m Url" link-hint-gnus-w3m-url)
+                  (const :tag "Help Link" link-hint-help-link)
+                  (const :tag "Info Link" link-hint-info-link)
+                  (const :tag "Markdown Link" link-hint-markdown-link)
+                  (const :tag "Mu4e Attachment" link-hint-mu4e-attachment)
+                  (const :tag "Mu4e Url" link-hint-mu4e-url)
+                  (const :tag "Notmuch Hello" link-hint-notmuch-hello)
+                  (const :tag "Nov Link" link-hint-nov-link)
+                  (const :tag "Org Link" link-hint-org-link)
+                  (const :tag "Package Install Link" link-hint-package-install-link)
+                  (const :tag "Package Keyword Link" link-hint-package-keyword-link)
+                  (const :tag "Package Link" link-hint-package-link)
+                  (const :tag "Shr Url" link-hint-shr-url)
+                  (const :tag "Text Url" link-hint-text-url)
+                  (const :tag "Treemacs" link-hint-treemacs)
+                  (const :tag "W3m Link" link-hint-w3m-link)
+                  (const :tag "W3m Message Link" link-hint-w3m-message-link)
+                  (const :tag "Woman Button" link-hint-woman-button)
+                  (symbol :tag "Custom Type"))))
 
 (defcustom link-hint-action-messages
   '(:copy "Copied"
@@ -88,14 +115,19 @@
     :browse-url "Browsed")
   "Plist of action to description message pairs."
   :group 'link-hint
-  :type 'list)
+  :type '(plist :options ((:copy (string :tag "Copy" :value "Copied"))
+                          (:open (string :tag "Open" :value "Opened"))
+                          (:browse-url (string :tag "Browse Url" :value "Browsed")))
+                :key-type (sexp :tag "Action")
+                :value-type (string :tag "Description")))
 
 (defcustom link-hint-message #'message
   "The funtion to use to message information or nil."
   :group 'link-hint
   :type '(choice
-          (function :tag "Function to use to message")
-          (const :tag "Don't message" nil)))
+          (const :tag "Don't message" nil)
+          (function-item :tag "Message" message)
+          (function :tag "Custom function")))
 
 (defcustom link-hint-url-regexp
   goto-address-url-regexp
