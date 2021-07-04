@@ -941,6 +941,30 @@ Only search the range between just after the point and BOUND."
   :open #'widget-button-press
   :copy #'link-hint--copy-widget)
 
+;; ** Org Agenda item
+
+(defun link-hint--next-org-agenda-item (&optional bound)
+  "Find the next org agenda item.
+Only search the range between just after the point and BOUND."
+  (link-hint--next-property 'org-marker bound))
+
+(declare-function org-agenda-switch-to "org-agenda")
+
+(defun link-hint--open-org-agenda-item (&rest _ignore)
+  "Open org agenda item at point."
+  (org-agenda-switch-to))
+
+(defun link-hint--org-agenda-item-at-point-p ()
+  "Return the org agenda at the point or nil."
+  (get-text-property (point) 'txt))
+
+(link-hint-define-type 'org-agenda-item
+  :next #'link-hint--next-org-agenda-item
+  :vars '(org-agenda-mode)
+  :open #'link-hint--open-org-agenda-item
+  :at-point-p #'link-hint--org-agenda-item-at-point-p
+  :copy #'kill-new)
+
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
   "Between START and END in the current buffer, collect all links of TYPE."
