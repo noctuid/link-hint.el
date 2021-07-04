@@ -941,6 +941,28 @@ Only search the range between just after the point and BOUND."
   :open #'widget-button-press
   :copy #'link-hint--copy-widget)
 
+;; ** Xref item
+
+(defun link-hint--next-xref-item (&optional bound)
+  "Find the next xref item.
+Only search the range between just after the point and BOUND."
+  (link-hint--next-property 'xref-item bound))
+
+(declare-function xref-goto-xref "xref")
+(declare-function xref--item-at-point "xref")
+(declare-function xref-item-summary "xref")
+
+(defun link-hint--copy-xref-item ()
+  "Copy a xref item in a xref buffer."
+  (kill-new (xref-item-summary (xref--item-at-point))))
+
+(link-hint-define-type 'xref-item
+  :next #'link-hint--next-xref-item
+  :vars '(xref--xref-buffer-mode)
+  :open #'xref-goto-xref
+  :at-point-p #'xref--item-at-point
+  :copy #'link-hint--copy-xref-item)
+
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
   "Between START and END in the current buffer, collect all links of TYPE."
