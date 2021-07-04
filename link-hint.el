@@ -973,6 +973,15 @@ Only search the range between just after the point and BOUND."
   :open #'widget-button-press
   :copy #'link-hint--copy-widget)
 
+;; ** Man button
+
+(link-hint-define-type 'man-button
+  :next #'link-hint--next-woman-button
+  :at-point-p #'link-hint--button-at-point-p
+  :vars '(Man-mode)
+  :open #'push-button
+  :copy #'kill-new)
+
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
   "Between START and END in the current buffer, collect all links of TYPE."
