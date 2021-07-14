@@ -1006,6 +1006,26 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--completion-list-candidate-at-point-p
   :copy #'kill-new)
 
+;; ** Dired filename
+(defun link-hint--next-dired-filename (&optional bound)
+  "Find the next dired filename location.
+Only search the range between just after the point and BOUND."
+  (link-hint--next-property 'dired-filename bound))
+
+(defun link-hint--dired-filename-at-point-p ()
+  "Return the dired filename at the point or nil."
+  (when (get-text-property (point) 'dired-filename)
+    (link-hint--property-text 'dired-filename)))
+
+(declare-function dired-find-file "dired")
+
+(link-hint-define-type 'dired-filename
+  :next #'link-hint--next-dired-filename
+  :at-point-p #'link-hint--dired-filename-at-point-p
+  :vars '(dired-mode)
+  :open #'dired-find-file
+  :copy #'kill-new)
+
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
   "Between START and END in the current buffer, collect all links of TYPE."
