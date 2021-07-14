@@ -974,12 +974,36 @@ Only search the range between just after the point and BOUND."
   :copy #'link-hint--copy-widget)
 
 ;; ** Man button
-
 (link-hint-define-type 'man-button
   :next #'link-hint--next-woman-button
   :at-point-p #'link-hint--button-at-point-p
   :vars '(Man-mode)
   :open #'push-button
+  :copy #'kill-new)
+
+;; ** Completion List candidate
+(defun link-hint--next-completion-list-candidate (&optional bound)
+  "Find the next completion list candidate location.
+Only search the range between just after the point and BOUND."
+  (next-completion 1)
+  (let ((bound (or bound (window-end)))
+        (point (point)))
+    (when (< point bound)
+      point)))
+
+(defun link-hint--open-completion-list-candidate (&rest _ignore)
+  "Select completion list candidate at point."
+  (choose-completion))
+
+(defun link-hint--completion-list-candidate-at-point-p ()
+  "Return the completion list candidate at the point or nil."
+  (get-text-property (point) 'completion--string))
+
+(link-hint-define-type 'completion-list-candidate
+  :next #'link-hint--next-completion-list-candidate
+  :vars '(completion-list-mode)
+  :open #'link-hint--open-completion-list-candidate
+  :at-point-p #'link-hint--completion-list-candidate-at-point-p
   :copy #'kill-new)
 
 ;; * Avy/Action Helper Functions
