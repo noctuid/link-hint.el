@@ -138,10 +138,15 @@
 (defcustom link-hint-url-regexp
   goto-address-url-regexp
   "Regexp used to determine what constitutes a text url.
-Defaults to `goto-address-url-regxp'. Note that this is used for text urls in
-modes that don't have some mechanism for supporting urls. This won't affect
-link-hint's behavior in `org-mode' or modes that use shr.el for urls, for
-example."
+Defaults to `goto-address-url-regxp'.
+
+This is used for searching for urls and checking if there is a match at point,
+but the regexp only needs to match the beginning of the url. `thingatpt' is used
+to obtain the full url.
+
+Note that this is used for text urls only in modes that don't have some
+mechanism for supporting urls. This won't affect link-hint's behavior in
+`org-mode' or modes that use shr.el for urls, for example."
   :type 'regexp)
 
 (defcustom link-hint-maybe-file-regexp
@@ -322,8 +327,10 @@ Only search the range between just after the point and BOUND."
   "Return the text url at the point or nil."
   (let ((url (thing-at-point-url-at-point t)))
     (and url
-         (string-match link-hint-url-regexp url)
-         (match-string 0 url))))
+         ;; this should filter out any lax matches that aren't actually urls;
+         ;; note that thingatpt will add missing schemes (www -> http://www)
+         (string-match-p link-hint-url-regexp url)
+         url)))
 
 (defun link-hint--process-url (url _action)
   "Return URL without any trailing parentheses."
