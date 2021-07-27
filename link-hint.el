@@ -449,7 +449,9 @@ Only search the range between just after the point and BOUND."
   ;; though `org-next-link' will jump to it
   (condition-case nil
       (org-open-at-point)
-    (error (org-open-link-from-string uri))))
+    (error (if (fboundp 'org-link-open-from-string)
+               (org-link-open-from-string uri)
+             (org-open-link-from-string uri)))))
 
 (link-hint-define-type 'org-link
   :next #'link-hint--next-org-link
