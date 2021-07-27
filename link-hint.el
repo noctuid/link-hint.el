@@ -903,7 +903,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Deadgrep matches
-(declare-function deadgrep-visit-resul "ext:deadgrep")
+(declare-function deadgrep-visit-result "ext:deadgrep")
 (defun link-hint--next-deadgrep-link (&optional bound)
   "Find the next deadgrep link.
 Only search the range between just after the point and BOUND."
