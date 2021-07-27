@@ -37,7 +37,6 @@
 ;;; Code:
 (require 'cl-lib)
 (require 'avy)
-(require 'url-util)
 (require 'thingatpt)
 (require 'browse-url)
 (require 'goto-addr)
@@ -328,12 +327,7 @@ Only search the range between just after the point and BOUND."
 
 (defun link-hint--text-url-at-point-p ()
   "Return the text url at the point or nil."
-  ;; using both thingatpt and url-util because:
-  ;; - thing-at-point won't detect e.g. www.google.com (https needed)
-  ;; - thing-at-point can correctly handle a url surrounded by parens
-  ;; - url-util won't detect a url that has an open paren before it
-  (let ((url (or (thing-at-point 'url)
-                 (url-get-url-at-point))))
+  (let ((url (thing-at-point-url-at-point t)))
     (and url
          (string-match link-hint-url-regexp url)
          (match-string 0 url))))
