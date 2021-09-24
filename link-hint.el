@@ -59,6 +59,7 @@
     link-hint-gnus-w3m-url
     link-hint-gnus-w3m-image-url
     link-hint-deadgrep
+    link-hint-dictionary-button
     link-hint-help-link
     link-hint-info-link
     link-hint-package-link
@@ -90,6 +91,7 @@
                   (const :tag "Compilation Link" link-hint-compilation-link)
                   (const :tag "Customize Widget" link-hint-customize-widget)
                   (const :tag "Deadgrep" link-hint-deadgrep)
+                  (const :tag "Dictionary Button" link-hint-dictionary-button)
                   (const :tag "Dired filename" link-hint-dired-filename)
                   (const :tag "Epkg Button" link-hint-epkg-button)
                   (const :tag "File Link" link-hint-file-link)
@@ -1075,6 +1077,23 @@ Only search the range between just after the point and BOUND."
   :open #'xref-goto-xref
   :at-point-p #'xref--item-at-point
   :copy #'link-hint--copy-xref-item)
+
+;; ** Dictionary button
+(defun link-hint--next-dictionary-button (&optional end-bound start-bound)
+  (let ((pos (next-single-char-property-change (or start-bound (point))
+                                               'button
+                                               nil
+                                               end-bound)))
+    (when (< pos end-bound)
+      (if-let ((button (button-at pos)))
+          (overlay-start button)
+        (link-hint--next-dictionary-button end-bound pos)))))
+
+(link-hint-define-type 'dictionary-button
+  :next #'link-hint--next-dictionary-button
+  :vars '(dictionary-mode)
+  :open #'push-button
+  :at-point-p #'link-hint--button-at-point-p)
 
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
