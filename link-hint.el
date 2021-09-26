@@ -61,6 +61,7 @@
     link-hint-deadgrep
     link-hint-help-link
     link-hint-info-link
+    link-hint-overlay-button
     link-hint-package-link
     link-hint-package-keyword-link
     link-hint-package-install-link
@@ -68,14 +69,12 @@
     link-hint-compilation-link
     link-hint-w3m-link
     link-hint-w3m-message-link
-    link-hint-woman-button
     link-hint-treemacs
     link-hint-nov-link
     link-hint-customize-widget
     link-hint-notmuch-hello
     link-hint-completion-list-candidate
     link-hint-dired-filename
-    link-hint-man-button
     link-hint-org-agenda-item
     link-hint-xref-item
     ;; generic
@@ -97,7 +96,6 @@
                   (const :tag "Gnus W3m Url" link-hint-gnus-w3m-url)
                   (const :tag "Help Link" link-hint-help-link)
                   (const :tag "Info Link" link-hint-info-link)
-                  (const :tag "Man Button" link-hint-man-button)
                   (const :tag "Markdown Link" link-hint-markdown-link)
                   (const :tag "Mu4e Attachment" link-hint-mu4e-attachment)
                   (const :tag "Mu4e Url" link-hint-mu4e-url)
@@ -105,6 +103,7 @@
                   (const :tag "Nov Link" link-hint-nov-link)
                   (const :tag "Org Agenda" link-hint-org-agenda-item)
                   (const :tag "Org Link" link-hint-org-link)
+                  (const :tag "Overlay Button" link-hint-overlay-button)
                   (const :tag "Package Install Link" link-hint-package-install-link)
                   (const :tag "Package Keyword Link" link-hint-package-keyword-link)
                   (const :tag "Package Link" link-hint-package-link)
@@ -113,7 +112,6 @@
                   (const :tag "Treemacs" link-hint-treemacs)
                   (const :tag "W3m Link" link-hint-w3m-link)
                   (const :tag "W3m Message Link" link-hint-w3m-message-link)
-                  (const :tag "Woman Button" link-hint-woman-button)
                   (const :tag "Xref Item" link-hint-xref-item)
                   (symbol :tag "Custom Type"))))
 
@@ -404,7 +402,7 @@ Only search the range between just after the point and BOUND."
   :next #'link-hint--next-button
   :at-point-p #'link-hint--button-at-point-p
   ;; TODO add more
-  :not-vars '(woman-mode treemacs-mode)
+  :not-vars '(woman-mode treemacs-mode Man-mode dictionary-mode)
   :open #'push-button
   :copy #'kill-new)
 
@@ -865,10 +863,12 @@ Only search the range between just after the point and BOUND."
   :open #'browse-url
   :copy #'kill-new)
 
-;; ** Woman Button
-;; only using for woman since need `next-single-char-property-change' (slow)
-(defun link-hint--find-woman-button (&optional start-bound end-bound)
-  "Find the first woman button location.
+;; ** Overlay Button
+;; Although potentially it might work in more modes, because this function
+;; uses `next-single-char-property-change', which is slow, it’s only used for
+;; woman, man, and dictionary modes.
+(defun link-hint--find-overlay-button (&optional start-bound end-bound)
+  "Find the first button location returned from `next-button’.
 Only search the range between just after START-BOUND and END-BOUND."
   (let ((start-bound (or start-bound (window-start)))
         (end-bound (or end-bound (window-end)))
@@ -879,15 +879,15 @@ Only search the range between just after START-BOUND and END-BOUND."
       (when button
         (button-start button)))))
 
-(defun link-hint--next-woman-button (&optional bound)
-  "Find the next woman button location.
+(defun link-hint--next-overlay-button (&optional bound)
+  "Find the next overlay button location.
 Only search the range between just after the point and BOUND."
-  (link-hint--find-woman-button (point) bound))
+  (link-hint--find-overlay-button (point) bound))
 
-(link-hint-define-type 'woman-button
-  :next #'link-hint--next-woman-button
+(link-hint-define-type 'overlay-button
+  :next #'link-hint--next-overlay-button
   :at-point-p #'link-hint--button-at-point-p
-  :vars '(woman-mode)
+  :vars '(woman-mode Man-mode dictionary-mode)
   :open #'push-button
   :copy #'kill-new)
 
@@ -978,14 +978,6 @@ Only search the range between just after the point and BOUND."
   :vars '(notmuch-hello-mode)
   :open #'widget-button-press
   :copy #'link-hint--copy-widget)
-
-;; ** Man button
-(link-hint-define-type 'man-button
-  :next #'link-hint--next-woman-button
-  :at-point-p #'link-hint--button-at-point-p
-  :vars '(Man-mode)
-  :open #'push-button
-  :copy #'kill-new)
 
 ;; ** Completion List candidate
 (defun link-hint--next-completion-list-candidate (&optional bound)
