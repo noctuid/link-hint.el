@@ -406,7 +406,7 @@ Only search the range between just after the point and BOUND."
   :next #'link-hint--next-button
   :at-point-p #'link-hint--button-at-point-p
   ;; TODO add more
-  :not-vars '(woman-mode treemacs-mode)
+  :not-vars '(woman-mode treemacs-mode Man-mode dictionary-mode)
   :open #'push-button
   :copy #'kill-new)
 
