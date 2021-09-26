@@ -59,9 +59,9 @@
     link-hint-gnus-w3m-url
     link-hint-gnus-w3m-image-url
     link-hint-deadgrep
-    link-hint-dictionary-button
     link-hint-help-link
     link-hint-info-link
+    link-hint-overlay-button
     link-hint-package-link
     link-hint-package-keyword-link
     link-hint-package-install-link
@@ -69,14 +69,12 @@
     link-hint-compilation-link
     link-hint-w3m-link
     link-hint-w3m-message-link
-    link-hint-woman-button
     link-hint-treemacs
     link-hint-nov-link
     link-hint-customize-widget
     link-hint-notmuch-hello
     link-hint-completion-list-candidate
     link-hint-dired-filename
-    link-hint-man-button
     link-hint-org-agenda-item
     link-hint-xref-item
     ;; generic
@@ -91,7 +89,6 @@
                   (const :tag "Compilation Link" link-hint-compilation-link)
                   (const :tag "Customize Widget" link-hint-customize-widget)
                   (const :tag "Deadgrep" link-hint-deadgrep)
-                  (const :tag "Dictionary Button" link-hint-dictionary-button)
                   (const :tag "Dired filename" link-hint-dired-filename)
                   (const :tag "Epkg Button" link-hint-epkg-button)
                   (const :tag "File Link" link-hint-file-link)
@@ -99,7 +96,6 @@
                   (const :tag "Gnus W3m Url" link-hint-gnus-w3m-url)
                   (const :tag "Help Link" link-hint-help-link)
                   (const :tag "Info Link" link-hint-info-link)
-                  (const :tag "Man Button" link-hint-man-button)
                   (const :tag "Markdown Link" link-hint-markdown-link)
                   (const :tag "Mu4e Attachment" link-hint-mu4e-attachment)
                   (const :tag "Mu4e Url" link-hint-mu4e-url)
@@ -107,6 +103,7 @@
                   (const :tag "Nov Link" link-hint-nov-link)
                   (const :tag "Org Agenda" link-hint-org-agenda-item)
                   (const :tag "Org Link" link-hint-org-link)
+                  (const :tag "Overlay Button" link-hint-overlay-button)
                   (const :tag "Package Install Link" link-hint-package-install-link)
                   (const :tag "Package Keyword Link" link-hint-package-keyword-link)
                   (const :tag "Package Link" link-hint-package-link)
@@ -115,7 +112,6 @@
                   (const :tag "Treemacs" link-hint-treemacs)
                   (const :tag "W3m Link" link-hint-w3m-link)
                   (const :tag "W3m Message Link" link-hint-w3m-message-link)
-                  (const :tag "Woman Button" link-hint-woman-button)
                   (const :tag "Xref Item" link-hint-xref-item)
                   (symbol :tag "Custom Type"))))
 
