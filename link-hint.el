@@ -879,13 +879,13 @@ Only search the range between just after START-BOUND and END-BOUND."
       (when button
         (button-start button)))))
 
-(defun link-hint--next-woman-button (&optional bound)
-  "Find the next woman button location.
+(defun link-hint--next-overlay-button (&optional bound)
+  "Find the next overlay button location.
 Only search the range between just after the point and BOUND."
-  (link-hint--find-woman-button (point) bound))
+  (link-hint--find-overlay-button (point) bound))
 
-(link-hint-define-type 'woman-button
-  :next #'link-hint--next-woman-button
+(link-hint-define-type 'overlay-button
+  :next #'link-hint--next-overlay-button
   :at-point-p #'link-hint--button-at-point-p
   :vars '(woman-mode)
   :open #'push-button
