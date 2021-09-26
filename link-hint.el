@@ -863,10 +863,12 @@ Only search the range between just after the point and BOUND."
   :open #'browse-url
   :copy #'kill-new)
 
-;; ** Woman Button
-;; only using for woman since need `next-single-char-property-change' (slow)
-(defun link-hint--find-woman-button (&optional start-bound end-bound)
-  "Find the first woman button location.
+;; ** Overlay Button
+;; Although potentially it might work in more modes, because this function
+;; uses `next-single-char-property-change', which is slow, it’s only used for
+;; woman, man, and dictionary modes.
+(defun link-hint--find-overlay-button (&optional start-bound end-bound)
+  "Find the first button location returned from `next-button’.
 Only search the range between just after START-BOUND and END-BOUND."
   (let ((start-bound (or start-bound (window-start)))
         (end-bound (or end-bound (window-end)))
