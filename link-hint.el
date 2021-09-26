@@ -981,14 +981,6 @@ Only search the range between just after the point and BOUND."
   :open #'widget-button-press
   :copy #'link-hint--copy-widget)
 
-;; ** Man button
-(link-hint-define-type 'man-button
-  :next #'link-hint--next-woman-button
-  :at-point-p #'link-hint--button-at-point-p
-  :vars '(Man-mode)
-  :open #'push-button
-  :copy #'kill-new)
-
 ;; ** Completion List candidate
 (defun link-hint--next-completion-list-candidate (&optional bound)
   "Find the next completion list candidate location.
@@ -1077,23 +1069,6 @@ Only search the range between just after the point and BOUND."
   :open #'xref-goto-xref
   :at-point-p #'xref--item-at-point
   :copy #'link-hint--copy-xref-item)
-
-;; ** Dictionary button
-(defun link-hint--next-dictionary-button (&optional end-bound start-bound)
-  (let ((pos (next-single-char-property-change (or start-bound (point))
-                                               'button
-                                               nil
-                                               end-bound)))
-    (when (< pos end-bound)
-      (if-let ((button (button-at pos)))
-          (overlay-start button)
-        (link-hint--next-dictionary-button end-bound pos)))))
-
-(link-hint-define-type 'dictionary-button
-  :next #'link-hint--next-dictionary-button
-  :vars '(dictionary-mode)
-  :open #'push-button
-  :at-point-p #'link-hint--button-at-point-p)
 
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
