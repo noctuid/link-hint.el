@@ -402,7 +402,7 @@ Only search the range between just after the point and BOUND."
   :next #'link-hint--next-button
   :at-point-p #'link-hint--button-at-point-p
   ;; TODO add more
-  :not-vars '(woman-mode treemacs-mode Man-mode dictionary-mode)
+  :not-vars '(woman-mode treemacs-mode Man-mode dictionary-mode fanyi-mode)
   :open #'push-button
   :copy #'kill-new)
 
@@ -887,7 +887,7 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'overlay-button
   :next #'link-hint--next-overlay-button
   :at-point-p #'link-hint--button-at-point-p
-  :vars '(woman-mode Man-mode dictionary-mode)
+  :vars '(woman-mode Man-mode dictionary-mode fanyi-mode)
   :open #'push-button
   :copy #'kill-new)
 
