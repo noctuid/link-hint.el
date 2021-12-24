@@ -216,7 +216,7 @@ Only search the range between just after the point and BOUND."
 If VALUE is nil, find the first location where PROPERTY exists. Only search the
 range from between just after the START-BOUND and END-BOUND."
   (let ((start-bound (or start-bound (window-start)))
-        (end-bound (or end-bound (window-end)))
+        (end-bound (or end-bound (window-end nil t)))
         first-non-match-pos)
     (setq first-non-match-pos
           (funcall (if value
