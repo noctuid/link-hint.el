@@ -132,14 +132,20 @@ Link hint will move the point (and sometimes the window; see =avy-all-windows=) 
 All link hint types are defined in this way, so see the source code for more examples.
 
 *** Mandatory Keywords
-=:next= should be a function that returns the position of the next link /after/ the point (i.e. if there is a link at the point, it should not return the point). It should take one argument that corresponds to the end bound for searching. Also, it should not move the point.
+=:next=
+- should be a function that returns the position of the next link /after/ the point (i.e. if there is a link at the point, it should not return the point)
+- should not move the point (wrap your code in ~save-excursion~ if you move the point)
+- arglist: =(bound)= - one argument for the end bound for searching
 
-=:at-point-p= should be a function that returns a non-nil value if there is a link at the point. Its return value can be used in the action functions.
+=:at-point-p=
+- should be a function that returns a non-nil value if there is a link at the point
+- its return value can be used in the action functions
+- arglist: =()= - not passed any arguments
 
 *** Predicate Keywords
-These keywords are used to determine when a type is active. These are not strictly necessary but can be used, for example, to help performance (this is usually not an issue except for WoMan links currently).
+These keywords are used to determine when a type is active. If these keywords are specified, link-hint will only check for the link type if the buffer meets the requirements. These are not strictly necessary but can be used, for example, to help performance (this is usually not an issue except for "overlay button" links currently - woman buttons, dictionary mode buttons, etc.).
 
-=:predicates= should be a list of functions that should each return true if the link type passes.
+=:predicates= should be a list of functions that should each return true if the link type passes/is valid in the current buffer.
 
 =:vars= should be a list of variables and/or major modes. If at least one of them is bound and true or the current major mode, the link type passes.
 
@@ -148,7 +154,15 @@ These keywords are used to determine when a type is active. These are not strict
 All of these checks must pass for the link type to be considered active. It is also possible to create commands that only operate on specific link types by binding =link-hint-types= (e.g. ~(let ((link-hint-types ...)))~).
 
 *** Action Keywords
-The main actions supported by default are =:open= and =:copy=. Action keywords can have any name not already used by link-hint. In a type definition, each action keyword should be specified with a function that will perform that action. These functions are not required to take a specific number of arguments. If an action function does not take any arguments, it should operate on the link at point. Otherwise, the return value of =:at-point-p= will either be used as a list of arguments for the action function (i.e. ~apply~) or a single argument for the action function (i.e. ~funcall~).
+The main actions supported by default are =:open= and =:copy=. Custom action keywords can have any name not already used by link-hint, but you may want to give your keywords some unique prefix to ensure they do not clash in case link-hint adds new action types (e.g. =:my-<action>=).
+
+=:<action>= (e.g. =:open=)
+- should be function that will perform an action on a link (e.g. open it in the case of =:open=)
+- arglist: =(<at-point-p return list item 1> <at-point-p return list item 2> ...)= or =(<at-point-p return value as single argument>)= or =()=; the function is not required to take a specific number of arguments
+  - if you want to use information obtained in the =:at-point-p= call, you can give the action implementation function a non-empty arglist
+    - if the =:at-point-p= function returns a list, you can use multiple arguments (one for each item in the list)
+    - if your =:at-point-p= function returns a single value, you should use a single argument, e.g. the text-url link type's =:at-point-p= function returns the url to open as a string, so the =:open= function can just be ~browse-url~ (which takes a url as an argument)
+  - if you use an empty arglist, the function should operate at the link at point
 
 Link types are not required to support all action keywords. If a link type does not support a particular action keyword, it will just be ignored for that action.
 
