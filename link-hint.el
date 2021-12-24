@@ -181,28 +181,25 @@ new window (e.g. opening a url in `eww')."
 (defvar link-hint-avy-ignored-modes)
 
 ;; * Link Finding Helper Functions
-(defun link-hint--find-regexp (search-regexp &optional start-bound end-bound)
+(defun link-hint--find-regexp (search-regexp start-bound end-bound)
   "Find the first occurrence of SEARCH-REGEXP.
 Only search the range between just after START-BOUND and END-BOUND."
   (save-excursion
-    (let ((start-bound (or start-bound (window-start)))
-          (end-bound (or end-bound (window-end)))
-          case-fold-search)
+    (let (case-fold-search)
       (goto-char start-bound)
       (ignore-errors (forward-char))
       (when (re-search-forward search-regexp end-bound t)
         (match-beginning 0)))))
 
-(defun link-hint--next-regexp (search-regexp &optional bound)
+(defun link-hint--next-regexp (search-regexp bound)
   "Find the next occurrence of SEARCH-REGEXP.
 Only search the range between just after the point and BOUND."
   (link-hint--find-regexp search-regexp (point) bound))
 
 (declare-function widget-forward "ext:wid-edit")
-(defun link-hint--next-widget (&optional bound)
+(defun link-hint--next-widget (bound)
   "Find the next widget location. Currently only used for custom mode.
 Only search the range between just after the point and BOUND."
-  (setq bound (or bound (window-end)))
   (save-excursion
     (save-restriction
       (narrow-to-region (point) bound)
@@ -211,13 +208,11 @@ Only search the range between just after the point and BOUND."
         (point)))))
 
 (defun link-hint--find-property-with-value
-    (property value &optional start-bound end-bound)
+    (property value start-bound end-bound)
   "Find the first location where PROPERTY has VALUE.
 If VALUE is nil, find the first location where PROPERTY exists. Only search the
 range from between just after the START-BOUND and END-BOUND."
-  (let ((start-bound (or start-bound (window-start)))
-        (end-bound (or end-bound (window-end nil t)))
-        first-non-match-pos)
+  (let (first-non-match-pos)
     (setq first-non-match-pos
           (funcall (if value
                        #'text-property-not-all
@@ -244,25 +239,25 @@ BEFORE-BOUND and AFTER-BOUND."
                             (point))))
         (after-bound (or after-bound
                          (save-excursion
-                           (goto-char (window-end))
+                           (goto-char (window-end nil t))
                            (forward-line 5)
                            (point)))))
     (buffer-substring-no-properties
      (previous-single-property-change (1+ (point)) property nil before-bound)
      (next-single-property-change (point) property nil after-bound))))
 
-(defun link-hint--next-property-with-value (property value &optional end-bound)
+(defun link-hint--next-property-with-value (property value end-bound)
   "Find the next location where PROPERTY has VALUE.
 Only search the range from between just after the point and END-BOUND."
   (link-hint--find-property-with-value property value (point) end-bound))
 
-(defun link-hint--find-property (property &optional start-bound end-bound)
+(defun link-hint--find-property (property start-bound end-bound)
   "Find the first location where PROPERTY exists.
 Only search the range from between just after the START-BOUND and the
 END-BOUND."
   (link-hint--find-property-with-value property nil start-bound end-bound))
 
-(defun link-hint--next-property (property &optional bound)
+(defun link-hint--next-property (property bound)
   "Find the next location where PROPERTY exists.
 Only search the range from between just after the point and BOUND."
   (link-hint--find-property property (point) bound))
@@ -316,7 +311,7 @@ variables is bound and true or the current `major-mode', and that none of its
              (not (cl-some #'link-hint--var-valid-p not-vars))))))
 
 ;; ** Text Url
-(defun link-hint--next-text-url (&optional bound)
+(defun link-hint--next-text-url (bound)
   "Find the next text url.
 Only search the range between just after the point and BOUND."
   (link-hint--next-regexp link-hint-url-regexp bound))
@@ -350,13 +345,11 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** File Link
-(defun link-hint--find-file-link (&optional start-bound end-bound)
+(defun link-hint--find-file-link (start-bound end-bound)
   "Find the first file link.
 Only search the range between just after START-BOUND and END-BOUND."
   (save-excursion
-    (let ((start-bound (or start-bound (window-start)))
-          (end-bound (or end-bound (window-end)))
-          file-link-pos)
+    (let (file-link-pos)
       (goto-char start-bound)
       (while (and
               (setq file-link-pos
@@ -373,7 +366,7 @@ Only search the range between just after START-BOUND and END-BOUND."
                  (ffap-file-at-point))
         file-link-pos))))
 
-(defun link-hint--next-file-link (&optional bound)
+(defun link-hint--next-file-link (bound)
   "Find the next file link.
 Only search the range between just after the point and BOUND."
   (link-hint--find-file-link (point) bound))
@@ -387,7 +380,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Generic Button
-(defun link-hint--next-button (&optional bound)
+(defun link-hint--next-button (bound)
   "Find the next button.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'button bound))
@@ -407,7 +400,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Shr Url
-(defun link-hint--next-shr-url (&optional bound)
+(defun link-hint--next-shr-url (bound)
   "Find the next shr url.
 Only search the range between just after the point and BOUND."
   ;; `shr-next-link' just uses text properties as well
@@ -428,7 +421,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Org Link
-(defun link-hint--next-org-link (&optional bound)
+(defun link-hint--next-org-link (bound)
   "Find the next org link.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'htmlize-link bound))
@@ -492,11 +485,10 @@ Only search the range between just after the point and BOUND."
 
 ;; ** Markdown Link
 (declare-function markdown-next-link "ext:markdown-mode")
-(defun link-hint--next-markdown-link (&optional bound)
+(defun link-hint--next-markdown-link (bound)
   "Find the next markdown link.
 Only search the range between just after the point and BOUND."
   ;; `markdown-next-link' does not use text properties
-  (setq bound (or bound (window-end)))
   (save-excursion
     (let ((match-pos (markdown-next-link)))
       (when (and match-pos
@@ -540,7 +532,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Mu4e Url
-(defun link-hint--next-mu4e-url (&optional bound)
+(defun link-hint--next-mu4e-url (bound)
   "Find the next mu4e url.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'mu4e-url bound))
@@ -564,7 +556,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Mu4e Attachment
-(defun link-hint--next-mu4e-attachment (&optional bound)
+(defun link-hint--next-mu4e-attachment (bound)
   "Find the next mu4e attachment.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'mu4e-attnum bound))
@@ -592,7 +584,7 @@ Only search the range between just after the point and BOUND."
 
 ;; ** Gnus w3m Url
 ;; only applicable when `mm-text-html-renderer' is gnus-w3m; shr is the default
-(defun link-hint--next-gnus-w3m-url (&optional bound)
+(defun link-hint--next-gnus-w3m-url (bound)
   "Find the next gnus-w3m url.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'gnus-string bound))
@@ -611,7 +603,7 @@ Only search the range between just after the point and BOUND."
 
 ;; ** Gnus w3m Image Url
 ;; only applicable when `mm-text-html-renderer' is gnus-w3m; shr is the default
-(defun link-hint--next-gnus-w3m-image-url (&optional bound)
+(defun link-hint--next-gnus-w3m-image-url (bound)
   "Find the next gnus-w3m image url.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'image-url bound))
@@ -629,7 +621,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Help Link
-(defun link-hint--next-help-link (&optional bound)
+(defun link-hint--next-help-link (bound)
   "Find the next help link.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'help-args bound))
@@ -649,7 +641,7 @@ Only search the range between just after the point and BOUND."
 
 ;; ** Info Link
 (declare-function Info-follow-nearest-node "info")
-(defun link-hint--next-info-link (&optional bound)
+(defun link-hint--next-info-link (bound)
   "Find the next info link.
 Only search the range between just after the point and BOUND."
   ;; Info-next-reference doesn't work for all links and uses
@@ -682,7 +674,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Package Link
-(defun link-hint--next-package-link (&optional bound)
+(defun link-hint--next-package-link (bound)
   "Find the next package link.
 Only search the range between just after the point and BOUND."
   ;; (link-hint--next-property-with-value
@@ -716,7 +708,7 @@ Only search the range between just after the point and BOUND."
 ;; TODO
 
 ;; ** Package Keyword Link
-(defun link-hint--next-package-keyword-link (&optional bound)
+(defun link-hint--next-package-keyword-link (bound)
   "Find the next package keyword link.
 Only search the range between just after the point and BOUND."
   ;; (link-hint--next-property-with-value
@@ -735,7 +727,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Package Install Link
-(defun link-hint--next-package-install-link (&optional bound)
+(defun link-hint--next-package-install-link (bound)
   "Find the next package installation link.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property-with-value
@@ -770,7 +762,7 @@ Only search the range between just after the point and BOUND."
           (when (eq category (button-category-symbol type))
             (throw 'category type)))))))
 
-(defun link-hint--next-epkg-button (&optional bound)
+(defun link-hint--next-epkg-button (bound)
   "Find the next epkg button.
 Only search the range between just after the point and BOUND."
   (catch 'found
@@ -818,7 +810,7 @@ Only search the range between just after the point and BOUND."
 
 ;; ** Compilation Link
 (declare-function compile-goto-error "compile")
-(defun link-hint--next-compilation-link (&optional bound)
+(defun link-hint--next-compilation-link (bound)
   "Find the next compilation link.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'compilation-message bound))
@@ -835,7 +827,7 @@ Only search the range between just after the point and BOUND."
   :open #'compile-goto-error)
 
 ;; ** w3m Link
-(defun link-hint--next-w3m-link (&optional bound)
+(defun link-hint--next-w3m-link (bound)
   "Find the next w3m link.
 Only search the range between just after the point and BOUND."
   ;; `w3m-goto-next-link' also uses text properties
@@ -867,19 +859,17 @@ Only search the range between just after the point and BOUND."
 ;; Although potentially it might work in more modes, because this function
 ;; uses `next-single-char-property-change', which is slow, it’s only used for
 ;; woman, man, and dictionary modes.
-(defun link-hint--find-overlay-button (&optional start-bound end-bound)
+(defun link-hint--find-overlay-button (start-bound end-bound)
   "Find the first button location returned from `next-button’.
 Only search the range between just after START-BOUND and END-BOUND."
-  (let ((start-bound (or start-bound (window-start)))
-        (end-bound (or end-bound (window-end)))
-        button)
+  (let (button)
     (save-restriction
       (narrow-to-region start-bound end-bound)
       (setq button (next-button (point)))
       (when button
         (button-start button)))))
 
-(defun link-hint--next-overlay-button (&optional bound)
+(defun link-hint--next-overlay-button (bound)
   "Find the next overlay button location.
 Only search the range between just after the point and BOUND."
   (link-hint--find-overlay-button (point) bound))
@@ -906,7 +896,7 @@ Only search the range between just after the point and BOUND."
 
 ;; ** Deadgrep matches
 (declare-function deadgrep-visit-result "ext:deadgrep")
-(defun link-hint--next-deadgrep-link (&optional bound)
+(defun link-hint--next-deadgrep-link (bound)
   "Find the next deadgrep link.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property-with-value 'face 'deadgrep-match-face bound))
@@ -922,18 +912,13 @@ Only search the range between just after the point and BOUND."
   :open #'deadgrep-visit-result)
 
 ;; ** Customize Widget
-(declare-function Custom-newline "cus-edit")
-(defun link-hint--next-customize-widget (&optional bound)
-  "Find the next package customize widget.
-Only search the range between just after the point and BOUND."
-  (link-hint--next-widget bound))
-
 ;; (customize-link (and (eq major-mode 'Custom-mode)
 ;;                      (button-at (point))))
 ;; (customize-field (and (eq major-mode 'Custom-mode)
 ;;                       (eq (car (widget-tabable-at))
 ;;                           'editable-field)))
 
+(declare-function Custom-newline "cus-edit")
 (defun link-hint--open-customize-widget ()
   "Open the customize widget at the point."
   (Custom-newline (point)))
@@ -945,7 +930,7 @@ Only search the range between just after the point and BOUND."
       (plist-get (cdr button) :tag))))
 
 (link-hint-define-type 'customize-widget
-  :next #'link-hint--next-customize-widget
+  :next #'link-hint--next-widget
   :at-point-p #'link-hint--customize-widget-at-point-p
   :vars '(Custom-mode)
   :open #'link-hint--open-customize-widget
@@ -980,12 +965,11 @@ Only search the range between just after the point and BOUND."
   :copy #'link-hint--copy-widget)
 
 ;; ** Completion List candidate
-(defun link-hint--next-completion-list-candidate (&optional bound)
+(defun link-hint--next-completion-list-candidate (bound)
   "Find the next completion list candidate location.
 Only search the range between just after the point and BOUND."
   (next-completion 1)
-  (let ((bound (or bound (window-end)))
-        (point (point)))
+  (let ((point (point)))
     (when (< point bound)
       point)))
 
@@ -1005,7 +989,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Dired filename
-(defun link-hint--next-dired-filename (&optional bound)
+(defun link-hint--next-dired-filename (bound)
   "Find the next dired filename location.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'dired-filename bound))
@@ -1025,7 +1009,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Org Agenda item
-(defun link-hint--next-org-agenda-item (&optional bound)
+(defun link-hint--next-org-agenda-item (bound)
   "Find the next org agenda item.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'org-marker bound))
@@ -1048,7 +1032,7 @@ Only search the range between just after the point and BOUND."
   :copy #'kill-new)
 
 ;; ** Xref item
-(defun link-hint--next-xref-item (&optional bound)
+(defun link-hint--next-xref-item (bound)
   "Find the next xref item.
 Only search the range between just after the point and BOUND."
   (link-hint--next-property 'xref-item bound))
@@ -1128,7 +1112,7 @@ Only search the range between just after the point and BOUND."
           (narrow-to-region rbeg rend)
           (setq beg (goto-char (point-min)))
           (while (not (= (point) (point-max)))
-            (goto-char (or (link-hint--next-property 'invisible)
+            (goto-char (or (link-hint--next-property 'invisible (point-max))
                            (point-max)))
             (push (cons beg (point)) visibles)
             (setq beg (goto-char
