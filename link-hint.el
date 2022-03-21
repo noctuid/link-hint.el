@@ -211,18 +211,51 @@ Only search the range between just after the point and BOUND."
     (property value start-bound end-bound)
   "Find the first location where PROPERTY has VALUE.
 If VALUE is nil, find the first location where PROPERTY exists. Only search the
-range from between just after the START-BOUND and END-BOUND."
-  (let (first-non-match-pos)
-    (setq first-non-match-pos
-          (funcall (if value
-                       #'text-property-not-all
-                     #'text-property-any)
-                   start-bound end-bound property value))
-    (when first-non-match-pos
-      (funcall (if value
-                   #'text-property-any
-                 #'text-property-not-all)
-               first-non-match-pos end-bound property value))))
+range from between just after the START-BOUND and END-BOUND.
+
+This function takes into account invisible property of overlays.
+It returns the first match that has no non-nil invisible property set."
+  (when (setq start-bound (link-hint--visible-pos start-bound end-bound))
+    (let (first-non-match-pos
+          found)
+      (setq first-non-match-pos
+            (funcall (if value
+                         #'text-property-not-all
+                       #'text-property-any)
+                     start-bound end-bound property value))
+      (catch 'found
+        (while first-non-match-pos
+          (setq found (funcall (if value
+                                   #'text-property-any
+                                 #'text-property-not-all)
+                               first-non-match-pos end-bound property value))
+          (cond
+           ((and found (= found first-non-match-pos))
+            (throw 'found found))
+           (found
+            (setq first-non-match-pos (link-hint--visible-pos found end-bound)))
+           (t
+            (throw 'found nil))))))))
+
+(defun link-hint--visible-pos (start &optional bound)
+  "Return a visible pos on or after START before BOUND.
+
+If the starting point is visible, return it.
+
+If it is invisible, return the first point where no invisible
+overlay is set after START but before BOUND.
+
+If there is no visible point, return nil."
+  (let ((pos start)
+        (bound (or bound (point-max))))
+    (catch 'pos
+      (while (<= pos bound)
+        (if-let (o (cl-some (lambda (o)
+                              (when (overlay-get o 'invisible)
+                                o))
+                            (overlays-at pos)))
+            (setq pos (1+ (overlay-end o)))
+          (throw 'pos pos))))))
 
 (defun link-hint--property-text
     (property &optional before-bound after-bound)
