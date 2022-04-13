@@ -77,6 +77,7 @@
     link-hint-dired-filename
     link-hint-org-agenda-item
     link-hint-xref-item
+    link-hint-bug-reference
     ;; generic
     link-hint-button
     link-hint-text-url
@@ -113,6 +114,7 @@
                   (const :tag "W3m Link" link-hint-w3m-link)
                   (const :tag "W3m Message Link" link-hint-w3m-message-link)
                   (const :tag "Xref Item" link-hint-xref-item)
+                  (const :tag "Bug Reference" link-hint-bug-reference)
                   (symbol :tag "Custom Type"))))
 
 (defcustom link-hint-action-messages
@@ -1051,6 +1053,35 @@ Only search the range between just after the point and BOUND."
   :open #'xref-goto-xref
   :at-point-p #'xref--item-at-point
   :copy #'link-hint--copy-xref-item)
+
+;; ** bug-reference-mode item
+(defun link-hint--next-bug-reference (bound)
+  "Find the next bug-reference."
+  (let ((next (next-single-char-property-change
+               (point) 'bug-reference-url nil bound)))
+    (unless (eq next bound)
+      ;; check 'bug-reference-url is set at next - if it is then return
+      ;; this
+      (catch 'found
+        (dolist (overlay (overlays-at next))
+          (when (overlay-get overlay 'bug-reference-url)
+            (throw 'found next)))
+        ;; otherwise find the next one
+        (setq next
+              (next-single-char-property-change
+               next 'bug-reference-url nil bound))
+        (unless (eq next bound) next)))))
+
+(defun link-hint--bug-reference-at-point-p ()
+  "Return the bug-reference url at the point or nil."
+  (car (get-char-property-and-overlay (point) 'bug-reference-url)))
+
+(link-hint-define-type 'bug-reference
+  :next #'link-hint--next-bug-reference
+  :at-point-p #'link-hint--bug-reference-at-point-p
+  :vars '(bug-reference-mode)
+  :open #'browse-url
+  :copy #'kill-new)
 
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)
