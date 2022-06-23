@@ -117,6 +117,20 @@
                   (const :tag "Bug Reference" link-hint-bug-reference)
                   (symbol :tag "Custom Type"))))
 
+(defcustom link-hint-action-fallback-commands nil
+  "Plist of action to fallback command pairs.
+If no link is detected at point when running an at-point command like
+`link-hint-open-link-at-point', check this plist and run the fallback command
+instead if any is matched.  For example, set this to (list :open #'<command>)
+where <command> is something like `embark-dwim', `action-key' (hyperbole), or
+`smart-jump-go' (e.g. conditionally in a `prog-mode' buffer).  See the
+documentation for a more complex example.  To still get a message that there is
+no supported link at point on failure, the fallback command should return nil if
+they also don't find anything."
+  :type '(plist
+          :key-type (sexp :tag "Action")
+          :value-type (function :tag "Fallback command")))
+
 (defcustom link-hint-action-messages
   '(:copy "Copied"
     :open "Opened"
@@ -1434,10 +1448,12 @@ values to copy the link to the clipboard and/or primary as well."  (interactive)
         (link (link-hint--get-link-at-point)))
     (if link
         (link-hint--action action link)
-      (when link-hint-message
-        (funcall link-hint-message
-                 "There is no link supporting the %s action at the point."
-                 action)))))
+      (let ((fallback (plist-get link-hint-action-fallback-commands action)))
+        (unless (or (and fallback (funcall fallback))
+                    (not link-hint-message))
+          (funcall link-hint-message
+                   "There is no link supporting the %s action at the point."
+                   action))))))
 
 ;;;###autoload
 (defun link-hint-open-link-at-point ()

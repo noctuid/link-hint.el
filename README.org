@@ -36,12 +36,23 @@ Currently the following types of links are supported:
 Feel free to request support for any useful link type I may have missed. Also, if you think it would be beneficial to have a more specific link type split from a more generic link type, feel free to make an issue. For example, there may be some specific type of button you want to ignore or use in a custom command without affecting other buttons.
 
 ** Similar
+*** Ace-link
 There is also [[https://github.com/abo-abo/ace-link][ace-link]] which I didn't know about when writing this package. The main functional differences at the time of writing are as follows:
 
 - link-hint supports more link types
 - link-hint supports operating on multiple different types of links with the same command in the same buffer; types are optionally tied to major modes, but generic link support is also provided (e.g. buttons and file paths)
 - link-hint supports easily adding more link types and actions
 - link-hint supports operating on multiple links at a time
+
+*** Embark
+There is some overlap with embark since both packages provide multiple actions for different types of things.  Here is a comparison:
+
+- Link-hint is mainly focused on links/buttons rather than types of =completing-reading= candidates
+- Link-hint is more focused on selecting links anywhere visible using avy
+- Both embark and link-hint can take different actions on different types of things at the point in a buffer; link-hint can actually fall back to using =embark-dwim= (see [[#at-point-fallback-commands][At Point Fallback Commands]])
+- If there is interest, link-hint can provide better integration with embark (provide feedback on issue #38 if interested)
+  - Add completing-read support (with support for choosing an action with embark or running =embark-collect=)
+  - Add a builtin link-hint action that just calls =embark-act= on the link position
 
 ** Basic Setup
 Basic usage of this package only requires making key bindings for ~link-hint-open-link~ or other commands. Here is an example configuration using [[https://github.com/jwiegley/use-package][use-package]]:
@@ -61,6 +72,7 @@ Here is an example configuration for evil:
 
 (define-key evil-normal-state-map (kbd "SPC f") 'link-hint-open-link)
 #+end_src
+
 ** Browser Choice
 ~browse-url~ is used for opening urls, so in the case that the desired browser is not being used by default, the user can set ~browse-url-browser-function~:
 
@@ -90,6 +102,45 @@ This package provides the following commands for operating on links:
 ~link-hint-copy-multiple-links~ and ~link-hint-copy-all-links~ also exist, but they may not be useful very often.
 
 This package does not bind any commands by default.
+
+** At Point Fallback Commands
+:PROPERTIES:
+:CUSTOM_ID: at-point-fallback-commands
+:END:
+
+While the main purpose of link-hint is remote link selection with avy, it does provide commands to operate on a link at point (since it already has the necessary code to do so).  =link-hint-open-link-at-point=, for example, can be used as a sort of global "act on the point" command.  If there is not a link at the point, you can make it fall back to another command by setting =link-hint-action-fallback-commands=.  Some potentially useful fallback commands would be =embark-dwim= and =action-key= (hyperbole).
+
+To still get the "no links found" error message when nothing happens, fallback command should return nil if it also fails to do anything.
+#+begin_src emacs-lisp
+(setq link-hint-action-fallback-commands
+      (list :open (lambda ()
+                    (condition-case _
+                        (progn
+                          (embark-dwim)
+                          t)
+                      (error
+                       nil)))))
+#+end_src
+
+Here is a more complex example that will try to jump to the definition in programming modes where possible before falling back to hyperbole.  If you want something like this, you will probably need to tweak this rather than use it as-is.
+#+begin_src emacs-lisp
+(defun noct-open ()
+  "Open the thing at point.
+Try with lsp or smart jump (if in a prog-mode buffer) then with hyperbole."
+  (interactive)
+  (or (when (derived-mode-p 'prog-mode)
+        (cond ((bound-and-true-p lsp-mode)
+               (not (stringp (lsp-find-definition))))
+              ((fboundp 'smart-jump-go)
+               ;; return nil instead of prompting when there is no definition
+               ;; at point
+               (cl-letf (((symbol-function 'xref--prompt-p) #'ignore))
+                 (smart-jump-go)))))
+      (when (fboundp 'action-key)
+        (action-key))))
+
+(setq link-hint-action-fallback-commands (list :open #'noct-open))
+#+end_src
 
 ** Overriding Avy Settings
 =link-hint.el= supports overriding avy's settings. For example, if you want to use a different avy style just for link hinting, you can set ~link-hint-avy-style~:
