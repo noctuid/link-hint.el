@@ -879,7 +879,12 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'overlay-button
   :next #'link-hint--next-overlay-button
   :at-point-p #'link-hint--button-at-point-p
-  :vars '(woman-mode Man-mode dictionary-mode fanyi-mode notmuch-show-mode)
+  :vars '(dictionary-mode
+          epa-key-list-mode
+          fanyi-mode
+          Man-mode
+          notmuch-show-mode
+          woman-mode)
   :open #'push-button
   :copy #'kill-new)
 

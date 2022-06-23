@@ -26,7 +26,7 @@ Currently the following types of links are supported:
 - Nov.el links
 - notmuch-hello links
 - Deadgrep matches
-- Other button links (e.g. WoMan/Man/Dictionary links, ag mode, etc.)
+- Other button links (e.g. WoMan/Man/Dictionary links, ag mode, epa-key-list-mode, etc.)
 - Completion List candidates (better put it before /link-hint-file-link/ for *project.el*)
 - Dired filenames
 - Org Agenda items
