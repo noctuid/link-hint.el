@@ -132,9 +132,9 @@ they also don't find anything."
           :value-type (function :tag "Fallback command")))
 
 (defcustom link-hint-action-messages
-  '(:copy "Copied"
-    :open "Opened"
-    :browse-url "Browsed")
+  (list :copy "Copied"
+        :open "Opened"
+        :browse-url "Browsed")
   "Plist of action to description message pairs."
   :type '(plist :options ((:copy (string :tag "Copy" :value "Copied"))
                           (:open (string :tag "Open" :value "Opened"))
@@ -143,7 +143,7 @@ they also don't find anything."
                 :value-type (string :tag "Description")))
 
 (defcustom link-hint-message #'message
-  "The funtion to use to message information or nil."
+  "The function to use to message information or nil."
   :type '(choice
           (const :tag "Don't message" nil)
           (function-item :tag "Message" message)
@@ -485,7 +485,7 @@ Only search the range between just after the point and BOUND."
                     (treemacs-button-get
                      (treemacs-node-at-point) :key))))
 
-(defun link-hint--treemacs-at-point-p()
+(defun link-hint--treemacs-at-point-p ()
   "`:at-point-p' for treemacs buffers."
   (let ((node (treemacs-node-at-point)))
     (when node
@@ -1179,7 +1179,7 @@ Only search the range between just after the point and BOUND."
        (eq (plist-get x :win)
            (plist-get y :win))))
 
-(defun link-hint--<  (x y)
+(defun link-hint--< (x y)
   "Return whether link X's position is before link Y's."
   (< (plist-get x :pos) (plist-get y :pos)))
 
@@ -1398,7 +1398,8 @@ If the point/window are not intentionally changed by the action, restore them."
 (defun link-hint-copy-link ()
   "Copy a visible link of a supported type to the kill ring with avy.
 `select-enable-clipboard' and `select-enable-primary' can be set to non-nil
-values to copy the link to the clipboard and/or primary as well."  (interactive)
+values to copy the link to the clipboard and/or primary as well."
+  (interactive)
   (avy-with link-hint-copy-link
     (link-hint--one :copy)))
 
