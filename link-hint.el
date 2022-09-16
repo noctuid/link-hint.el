@@ -867,7 +867,7 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'w3m-message-link
   :next #'link-hint--next-w3m-link
   :at-point-p #'link-hint--w3m-link-at-point-p
-  :vars '(gnus-article-mode)
+  :vars '(gnus-article-mode notmuch-show-mode)
   :open #'browse-url
   :copy #'kill-new)
 
