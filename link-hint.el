@@ -989,9 +989,16 @@ Only search the range between just after the point and BOUND."
 (defun link-hint--next-completion-list-candidate (bound)
   "Find the next completion list candidate location.
 Only search the range between just after the point and BOUND."
-  (next-completion 1)
-  (let ((point (point)))
-    (when (< point bound)
+  (let ((bound (or bound (window-end)))
+	      (initpoint (point))
+        point)
+    (forward-char)
+    (next-completion 1)
+    (setq point (point))
+    (when (and
+	         (not (eql initpoint point))
+	         (> (- point initpoint) 1)
+	         (< point bound))
       point)))
 
 (defun link-hint--open-completion-list-candidate (&rest _ignore)
