@@ -558,10 +558,13 @@ Only search the range between just after the point and BOUND."
   (get-text-property (point) 'mu4e-url))
 
 (declare-function mu4e~view-browse-url-from-binding "ext:mu4e-view")
+(declare-function mu4e--view-browse-url-from-binding "ext:mu4e-view")
 (defun link-hint--open-mu4e-url (url)
   "Open the mu4e URL."
   ;; note: browse-url also supports mailto
-  (mu4e~view-browse-url-from-binding url))
+  (if (fboundp 'mu4e--view-browse-url-from-binding)
+      (mu4e--view-browse-url-from-binding url)
+    (mu4e~view-browse-url-from-binding url)))
 
 (link-hint-define-type 'mu4e-url
   :next #'link-hint--next-mu4e-url
