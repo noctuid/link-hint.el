@@ -810,13 +810,13 @@ Only search the range between just after the point and BOUND."
   "Open an epkg button at point."
   (let ((label (link-hint--at-epkg-button-p)))
     (cl-case (link-hint--overlay-epkg-category (car (overlays-at (point))))
-      ('epkg-package
+      (epkg-package
        (epkg-describe-package label))
-      ('epkg-author
+      (epkg-author
        (epkg-list-packages-by-author label))
-      ('epkg-keyword
+      (epkg-keyword
        (epkg-list-keyworded-packages (intern label)))
-      ('epkg-library
+      (epkg-library
        (find-library label)))))
 
 (link-hint-define-type 'epkg-button
