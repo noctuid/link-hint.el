@@ -558,10 +558,13 @@ Only search the range between just after the point and BOUND."
   (get-text-property (point) 'mu4e-url))
 
 (declare-function mu4e~view-browse-url-from-binding "ext:mu4e-view")
+(declare-function mu4e--view-browse-url-from-binding "ext:mu4e-view")
 (defun link-hint--open-mu4e-url (url)
   "Open the mu4e URL."
   ;; note: browse-url also supports mailto
-  (mu4e~view-browse-url-from-binding url))
+  (if (fboundp 'mu4e--view-browse-url-from-binding)
+      (mu4e--view-browse-url-from-binding url)
+    (mu4e~view-browse-url-from-binding url)))
 
 (link-hint-define-type 'mu4e-url
   :next #'link-hint--next-mu4e-url
@@ -807,13 +810,13 @@ Only search the range between just after the point and BOUND."
   "Open an epkg button at point."
   (let ((label (link-hint--at-epkg-button-p)))
     (cl-case (link-hint--overlay-epkg-category (car (overlays-at (point))))
-      ('epkg-package
+      (epkg-package
        (epkg-describe-package label))
-      ('epkg-author
+      (epkg-author
        (epkg-list-packages-by-author label))
-      ('epkg-keyword
+      (epkg-keyword
        (epkg-list-keyworded-packages (intern label)))
-      ('epkg-library
+      (epkg-library
        (find-library label)))))
 
 (link-hint-define-type 'epkg-button
