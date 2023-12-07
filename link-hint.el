@@ -1101,7 +1101,7 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'bug-reference
   :next #'link-hint--next-bug-reference
   :at-point-p #'link-hint--bug-reference-at-point-p
-  :vars '(bug-reference-mode)
+  :vars '(bug-reference-mode bug-reference-prog-mode)
   :open #'browse-url
   :copy #'kill-new)
 
