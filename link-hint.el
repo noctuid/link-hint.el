@@ -455,7 +455,7 @@ Only search the range between just after the point and BOUND."
   ;; org-open-at-point won't work e.g. for =http://address.com= even
   ;; though `org-next-link' will jump to it
   (condition-case nil
-      (org-open-at-point)
+      (org-open-at-point-global)
     (error (if (fboundp 'org-link-open-from-string)
                (org-link-open-from-string uri)
              (org-open-link-from-string uri)))))
