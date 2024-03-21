@@ -1262,12 +1262,16 @@ First try `apply'. If there is an error (ARGS is the wrong number of arguments
 for FUNC), `funcall' FUNC with ARGS. Finally, call FUNC alone."
   (when parser
     (setq args (funcall parser args action)))
+  (unless (listp args)
+    (setq args (list args)))
   ;; TODO is there a way to know how many arguments a function takes?
   (condition-case nil
       (apply func args)
-    (error (condition-case nil
-               (funcall func args)
-             (error (funcall func))))))
+    (wrong-number-of-arguments
+     (condition-case nil
+         (funcall func args)
+       (wrong-number-of-arguments
+        (funcall func))))))
 
 (defun link-hint--message (action &optional link-description type)
   "Display a message about an ACTION performed on a link.
