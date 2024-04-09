@@ -841,7 +841,7 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'compilation-link
   :next #'link-hint--next-compilation-link
   :at-point-p #'link-hint--compilation-link-at-point-p
-  :vars '(compilation-mode compilation-minor-mode)
+  :vars '(compilation-mode compilation-minor-mode compilation-shell-minor-mode)
   ;; no simple way to get message for copying
   :open #'compile-goto-error)
 
