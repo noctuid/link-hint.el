@@ -923,7 +923,7 @@ Only search the range between just after the point and BOUND."
 (defun link-hint--next-deadgrep-link (bound)
   "Find the next deadgrep link.
 Only search the range between just after the point and BOUND."
-  (link-hint--next-property-with-value 'face 'deadgrep-match-face bound))
+  (link-hint--next-property-with-value 'face 'deadgrep-meta-face bound))
 
 (defun link-hint--deadgrep-link-at-point-p ()
   "Return the link message at the point or nil."
