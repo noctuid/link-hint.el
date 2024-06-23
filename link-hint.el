@@ -926,8 +926,11 @@ Only search the range between just after the point and BOUND."
   (link-hint--next-property-with-value 'face 'deadgrep-meta-face bound))
 
 (defun link-hint--deadgrep-link-at-point-p ()
-  "Return the link message at the point or nil."
-  (link-hint--property-text 'deadgrep-filename))
+  "Return the source location at the point."
+  (let ((filename (get-text-property (point) 'deadgrep-filename))
+        (line-number (get-text-property (point) 'deadgrep-line-number)))
+    (when (and filename line-number)
+      (format "%s:%s" filename line-number))))
 
 (link-hint-define-type 'deadgrep
   :next #'link-hint--next-deadgrep-link
