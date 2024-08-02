@@ -542,7 +542,7 @@ Only search the range between just after the point and BOUND."
   :next #'link-hint--next-markdown-link
   :at-point-p #'link-hint--markdown-link-at-point-p
   :vars '(markdown-mode gfm-mode markdown-view-mode)
-  :parser #'link-hint--parse-markdown-link
+  :parse #'link-hint--parse-markdown-link
   :open #'link-hint--open-markdown-link
   :open-multiple t
   :copy #'kill-new)
