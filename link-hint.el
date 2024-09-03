@@ -219,9 +219,19 @@ Only search the range between just after the point and BOUND."
   (save-excursion
     (save-restriction
       (narrow-to-region (point) bound)
+      ;; Emacs <30 will raise an error when there is no widget forward
+      ;; of point.  Emacs 30 introduced code that no longer raises an
+      ;; error in this case, and it doesn't move point either.
+      ;; Therefore we return nil if an error is raised (Emacs <30),
+      ;; but we also return nil if `widget-forward' doesn't move point
+      ;; (Emacs 30).
       (ignore-errors
-        (widget-forward 1)
-        (point)))))
+        (let ((start (point))
+              (new-pos (progn
+                         (widget-forward 1)
+                         (point))))
+          (when (> new-pos start)
+            new-pos))))))
 
 (defun link-hint--find-property-with-value
     (property value start-bound end-bound)
