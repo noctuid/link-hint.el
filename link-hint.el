@@ -441,7 +441,7 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--shr-url-at-point-p
   ;; would need a comprehensive list of all modes that use shr.el
   ;; :vars
-  :not-vars '(nov-mode)
+  :not-vars '(mastodon-mode nov-mode)
   :open #'browse-url
   :open-multiple t
   :copy #'kill-new)
