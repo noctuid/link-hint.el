@@ -219,9 +219,19 @@ Only search the range between just after the point and BOUND."
   (save-excursion
     (save-restriction
       (narrow-to-region (point) bound)
+      ;; Emacs <30 will raise an error when there is no widget forward
+      ;; of point.  Emacs 30 introduced code that no longer raises an
+      ;; error in this case, and it doesn't move point either.
+      ;; Therefore we return nil if an error is raised (Emacs <30),
+      ;; but we also return nil if `widget-forward' doesn't move point
+      ;; (Emacs 30).
       (ignore-errors
-        (widget-forward 1)
-        (point)))))
+        (let ((start (point))
+              (new-pos (progn
+                         (widget-forward 1)
+                         (point))))
+          (when (> new-pos start)
+            new-pos))))))
 
 (defun link-hint--find-property-with-value
     (property value start-bound end-bound)
@@ -431,7 +441,7 @@ Only search the range between just after the point and BOUND."
   :at-point-p #'link-hint--shr-url-at-point-p
   ;; would need a comprehensive list of all modes that use shr.el
   ;; :vars
-  :not-vars '(nov-mode)
+  :not-vars '(mastodon-mode nov-mode)
   :open #'browse-url
   :open-multiple t
   :copy #'kill-new)
@@ -455,7 +465,7 @@ Only search the range between just after the point and BOUND."
   ;; org-open-at-point won't work e.g. for =http://address.com= even
   ;; though `org-next-link' will jump to it
   (condition-case nil
-      (org-open-at-point)
+      (org-open-at-point-global)
     (error (if (fboundp 'org-link-open-from-string)
                (org-link-open-from-string uri)
              (org-open-link-from-string uri)))))
@@ -542,7 +552,7 @@ Only search the range between just after the point and BOUND."
   :next #'link-hint--next-markdown-link
   :at-point-p #'link-hint--markdown-link-at-point-p
   :vars '(markdown-mode gfm-mode markdown-view-mode)
-  :parser #'link-hint--parse-markdown-link
+  :parse #'link-hint--parse-markdown-link
   :open #'link-hint--open-markdown-link
   :open-multiple t
   :copy #'kill-new)
@@ -841,7 +851,7 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'compilation-link
   :next #'link-hint--next-compilation-link
   :at-point-p #'link-hint--compilation-link-at-point-p
-  :vars '(compilation-mode compilation-minor-mode)
+  :vars '(compilation-mode compilation-minor-mode compilation-shell-minor-mode)
   ;; no simple way to get message for copying
   :open #'compile-goto-error)
 
@@ -923,11 +933,14 @@ Only search the range between just after the point and BOUND."
 (defun link-hint--next-deadgrep-link (bound)
   "Find the next deadgrep link.
 Only search the range between just after the point and BOUND."
-  (link-hint--next-property-with-value 'face 'deadgrep-match-face bound))
+  (link-hint--next-property-with-value 'face 'deadgrep-meta-face bound))
 
 (defun link-hint--deadgrep-link-at-point-p ()
-  "Return the link message at the point or nil."
-  (link-hint--property-text 'deadgrep-filename))
+  "Return the source location at the point."
+  (let ((filename (get-text-property (point) 'deadgrep-filename))
+        (line-number (get-text-property (point) 'deadgrep-line-number)))
+    (when (and filename line-number)
+      (format "%s:%s" filename line-number))))
 
 (link-hint-define-type 'deadgrep
   :next #'link-hint--next-deadgrep-link
@@ -1108,7 +1121,7 @@ Only search the range between just after the point and BOUND."
 (link-hint-define-type 'bug-reference
   :next #'link-hint--next-bug-reference
   :at-point-p #'link-hint--bug-reference-at-point-p
-  :vars '(bug-reference-mode)
+  :vars '(bug-reference-mode bug-reference-prog-mode)
   :open #'browse-url
   :copy #'kill-new)
 
