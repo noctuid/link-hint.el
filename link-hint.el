@@ -1005,10 +1005,18 @@ Only search the range between just after the point and BOUND."
 (defun link-hint--next-completion-list-candidate (bound)
   "Find the next completion list candidate location.
 Only search the range between just after the point and BOUND."
-  (next-completion 1)
-  (let ((point (point)))
-    (when (< point bound)
-      point)))
+  (save-excursion
+    (let ((start (point)))
+      (next-completion 1)
+      (let ((pos (point)))
+        (when (or (< start pos bound)
+                  ;; edge case where `next-completion' will not move the point
+                  ;; the first time it's called
+                  (and (boundp 'completions-header-format)
+                       (null completions-header-format)
+		       (null completion-show-help)
+                       (= start (point-min))))
+          pos)))))
 
 (defun link-hint--open-completion-list-candidate (&rest _ignore)
   "Select completion list candidate at point."
