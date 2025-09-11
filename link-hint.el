@@ -515,11 +515,12 @@ Only search the range between just after the point and BOUND."
   "Find the next markdown link.
 Only search the range between just after the point and BOUND."
   ;; `markdown-next-link' does not use text properties
-  (save-excursion
-    (let ((match-pos (markdown-next-link)))
-      (when (and match-pos
-                 (< match-pos bound))
-        match-pos))))
+  (let ((start (point)))
+    (save-excursion
+      (let ((match-pos (markdown-next-link)))
+        (when (and match-pos
+                   (< start match-pos bound))
+          match-pos)))))
 
 (declare-function markdown-link-at-pos "ext:markdown-mode")
 (declare-function markdown-wiki-link-p "ext:markdown-mode")
