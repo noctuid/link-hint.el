@@ -182,6 +182,13 @@ the window will never be restored if the action intentionally opens/selects a
 new window (e.g. opening a url in `eww')."
   :type 'boolean)
 
+(defcustom link-hint-dispatch-alist
+  '((?c . avy-action-link-copy)
+    (?o . avy-action-link-open))
+  "List of actions to add to `avy-dispatch-alist'."
+  :group 'link-hint
+  :type '(function))
+
 ;; ** Avy Settings
 ;;  these only have an effect if bound by the user
 (defvar link-hint-avy-style)
@@ -1260,21 +1267,20 @@ return it."
     (if (or (cdr links)
             (not avy-single-candidate-jump))
         (save-selected-window
-          (let* ((avy-action #'identity)
-                 (pos (avy-process
-                       (mapcar (lambda (x) (cons (plist-get x :pos)
-                                                 (plist-get x :win)))
-                               links)
-                       (avy--style-fn (if (boundp 'link-hint-avy-style)
-                                          link-hint-avy-style
-                                        avy-style)))))
-            (if (numberp pos)
-                (cl-find (list :pos pos :win (get-buffer-window))
-                         links
-                         :test #'link-hint--equal)
-              (when link-hint-message
-                (funcall link-hint-message "Aborted link selection."))
-              nil)))
+          (if-let* ((pos (avy-process
+                          (mapcar (lambda (x) (cons (plist-get x :pos)
+                                               (plist-get x :win)))
+                                  links)
+                          (avy--style-fn (if (boundp 'link-hint-avy-style)
+                                             link-hint-avy-style
+                                           avy-style))))
+                    ((numberp pos)))
+              (cl-find (list :pos pos :win (get-buffer-window))
+                       links
+                       :test #'link-hint--equal)
+            (when link-hint-message
+              (funcall link-hint-message "Aborted link selection."))
+            nil))
       (car links))))
 
 (defun link-hint--apply (func args &optional parser action)
@@ -1455,6 +1461,37 @@ values to copy the link to the clipboard and/or primary as well."
   (interactive)
   (avy-with link-hint-copy-all-links
     (link-hint--all :copy)))
+
+;; ** Avy Actions
+(defmacro link-hint-avy-action (action doc)
+  "Generate an avy handler function for ACTION with DOC."
+  (let* ((name (concat "avy-action-link-" action))
+         (sym (intern name)))
+    `(defun ,sym (pt)
+       ,doc
+       (goto-char pt)
+       (link-hint--action-at-point
+        ,(intern (concat ":" action))))))
+
+(link-hint-avy-action
+ "open" "Open the selected link.")
+
+(link-hint-avy-action
+ "copy" "Copy the selected link.")
+
+;;;###autoload
+(defun link-hint-avy-act ()
+  "Perform an action on a selected link.
+The default action is to open the selected link"
+  (interactive)
+  (let ((avy-dispatch-alist
+         (append link-hint-dispatch-alist
+                 avy-dispatch-alist)))
+    (avy-with link-hint-avy-action
+      (when-let* ((links (link-hint--get-links))
+                  (link (link-hint--process links))
+                  ((not avy-action)))
+        (link-hint--action :open link)))))
 
 ;; ** At Point Commands
 (defun link-hint--get-link-at-point ()
