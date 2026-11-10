@@ -78,6 +78,7 @@
     link-hint-org-agenda-item
     link-hint-xref-item
     link-hint-bug-reference
+    link-hint-ghostel-link
     ;; generic
     link-hint-button
     link-hint-text-url
@@ -93,6 +94,7 @@
                   (const :tag "Dired filename" link-hint-dired-filename)
                   (const :tag "Epkg Button" link-hint-epkg-button)
                   (const :tag "File Link" link-hint-file-link)
+                  (const :tag "Ghostel Link" link-hint-ghostel-link)
                   (const :tag "Gnus W3m Image Url" link-hint-gnus-w3m-image-url)
                   (const :tag "Gnus W3m Url" link-hint-gnus-w3m-url)
                   (const :tag "Help Link" link-hint-help-link)
@@ -1126,6 +1128,59 @@ Only search the range between just after the point and BOUND."
   :vars '(bug-reference-mode bug-reference-prog-mode)
   :open #'browse-url
   :copy #'kill-new)
+
+;; ** Ghostel Link
+;; ghostel stores hyperlinks (OSC 8 links, auto-detected urls, and file:line
+;; references) as `help-echo' text properties.  Runs sharing a
+;; `ghostel-link-id' (e.g. the chunks of a wrapped OSC 8 link) are a single
+;; link.
+(defun link-hint--next-ghostel-link (bound)
+  "Find the next ghostel hyperlink.
+Only search the range between just after the point and BOUND."
+  (save-excursion
+    (let ((skip-id (get-text-property (point) 'ghostel-link-id))
+          pos)
+      (while (and (setq pos (link-hint--next-property 'help-echo bound))
+                  ;; skip non-link help-echo values and the remaining chunks
+                  ;; of the link the point is in
+                  (or (not (stringp (get-text-property pos 'help-echo)))
+                      (and skip-id
+                           (equal skip-id
+                                  (get-text-property pos 'ghostel-link-id)))))
+        (goto-char pos))
+      pos)))
+
+(defun link-hint--ghostel-link-at-point-p ()
+  "Return the ghostel hyperlink at the point or nil."
+  (let ((uri (get-text-property (point) 'help-echo)))
+    (and (stringp uri) uri)))
+
+(declare-function ghostel-open-link-at-point "ext:ghostel")
+(defun link-hint--open-ghostel-link (&rest _)
+  "Open the ghostel hyperlink at point.
+Open with `find-file' instead of ghostel's `find-file-other-window' so that
+the window is still chosen by `display-buffer-alist', which `display-buffer'
+consults before the same-window action `find-file' passes down.  That lets
+users redirect these buffers with normal display rules."
+  ;; not `switch-to-buffer' or `display-buffer-overriding-action', which would
+  ;; bypass `display-buffer-alist'
+  (cl-letf (((symbol-function 'find-file-other-window) #'find-file))
+    (ghostel-open-link-at-point)))
+
+(defun link-hint--copy-ghostel-link (uri)
+  "Copy the ghostel hyperlink URI.
+Strip ghostel's \"fileref:\" prefix so that the path is copied."
+  (kill-new (if (string-prefix-p "fileref:" uri)
+                (substring uri (length "fileref:"))
+              uri)))
+
+(link-hint-define-type 'ghostel-link
+  :next #'link-hint--next-ghostel-link
+  :at-point-p #'link-hint--ghostel-link-at-point-p
+  :vars '(ghostel-mode)
+  :open #'link-hint--open-ghostel-link
+  :open-multiple t
+  :copy #'link-hint--copy-ghostel-link)
 
 ;; * Avy/Action Helper Functions
 (defun link-hint--collect (start end type)

@@ -12,6 +12,7 @@ Currently the following types of links are supported:
 - Plain text urls (e.g. =http://github.com=; includes irc urls and mailto)
 - File paths
 - Shr urls (e.g. elfeed links, links in html mu4e and gnus messages, eww urls, etc.)
+- Ghostel terminal hyperlinks (OSC 8 links, auto-detected URLs, and file:line references)
 - Org mode urls (includes =mailto:= links)
 - Markdown links (including "wiki links"; see =markdown-enable-wiki-links=)
 - Mu4e links (urls and mailto addresses)
